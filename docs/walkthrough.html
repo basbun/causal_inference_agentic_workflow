@@ -293,6 +293,28 @@
     <div class="callout"><b>Why it matters:</b> these diverge when effects are heterogeneous. A strongly
     positive ATT does not promise the program helps the reluctant majority (ATE). Quoting the wrong one is
     a silent error no diagnostic will catch.</div>
+
+    <div class="widget" id="w-est">
+      <div class="wtitle">⚙ Interactive — watch ATE and ATT pull apart</div>
+      <p class="wsub">150 managers in three types whose <i>true</i> effects differ:
+      <b style="color:#f87171">high-responders +0.50</b>, <b style="color:#fbbf24">middle +0.30</b>,
+      <b style="color:#6ea8fe">low-responders +0.10</b>. The overall <b>ATE is fixed at +0.30</b>. Now drag
+      <b>selection on gains</b> — how much the people who benefit most are the ones who actually enrol. Filled
+      dots are treated. Watch the <b>ATT</b> (effect among the treated) climb away from the ATE.</p>
+      <canvas id="est-canvas" width="900" height="200"></canvas>
+      <div class="wctrl" style="margin-top:14px">
+        <label>selection&nbsp;on&nbsp;gains</label>
+        <input type="range" id="est-s" min="0" max="3" step="0.05" value="0">
+        <span class="wval" id="est-sv">0.00</span>
+      </div>
+      <div class="simbar"><span class="lab" style="color:#fff">ATE (everyone)</span>
+        <div class="bar"><i style="width:0"></i><div class="truth-mark" id="est-tickA"></div></div>
+        <span class="v" style="color:#fff">+0.30</span></div>
+      <div class="simbar"><span class="lab">ATT (treated)</span>
+        <div class="bar"><i id="est-att-bar" style="background:var(--teal)"></i><div class="truth-mark" id="est-tickB"></div></div>
+        <span class="v" id="est-att" style="color:var(--teal)"></span></div>
+      <p class="wnote" id="est-note"></p>
+    </div>
   </section>
 
   <section id="dags">
@@ -870,6 +892,51 @@ pytest tests/ -q                           <span class="c"># guards: ATT weights
         ? 'After weighting, the control distribution lines up with the treated and the SMD drops below the 0.1 threshold. The reweighted controls now stand in as a fair counterfactual — <i>this</i> is what "adjusting" actually does.'
         : 'Before weighting, the control group is the wrong comparison — its X distribution barely overlaps the treated. That gap <i>is</i> the confounding.';
     });
+  })();
+
+  /* ============ Widget 4 — estimand explorer (ATE vs ATT) ============ */
+  (function(){
+    var cv=document.getElementById('est-canvas'); if(!cv) return;
+    var N=150, COLS=30, ROWS=5, rng=makeRNG(4242);
+    var EFF=[0.50,0.30,0.10], COL=['#f87171','#fbbf24','#6ea8fe'];
+    // assign each manager a type (balanced thirds) and a fixed uniform draw
+    var grp=[],U=[],i; for(i=0;i<N;i++){ grp.push(i%3); U.push(rng()); }
+    var meanEff=EFF.reduce(function(a,b){return a+b;})/3; // 0.30 = ATE (balanced)
+    var SCALE=0.6, sl=document.getElementById('est-s');
+    function pct(v){ return Math.max(0,Math.min(100,(v/SCALE)*100)); }
+    document.getElementById('est-tickA').style.left=pct(0.30)+'%';
+    document.getElementById('est-tickB').style.left=pct(0.30)+'%';
+    function treatedSet(s){
+      // p of enrolling rises with one's own gain when s>0; intercept keeps ~45% enrolled
+      var T=[]; for(i=0;i<N;i++){ var z=(EFF[grp[i]]-meanEff)/0.16; var p=sigmoid(-0.2+s*z); T.push(U[i]<p?1:0); } return T;
+    }
+    function drawDots(T){
+      var ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
+      ctx.clearRect(0,0,W,H);
+      var padX=24, padY=20, gw=(W-2*padX)/COLS, gh=(H-2*padY)/ROWS, r=Math.min(gw,gh)*0.32;
+      for(i=0;i<N;i++){ var c=i%COLS, rw=Math.floor(i/COLS);
+        var x=padX+gw*(c+0.5), y=padY+gh*(rw+0.5);
+        ctx.beginPath(); ctx.arc(x,y,r,0,2*Math.PI);
+        if(T[i]){ ctx.fillStyle=COL[grp[i]]; ctx.globalAlpha=1; ctx.fill(); }
+        else { ctx.globalAlpha=0.22; ctx.fillStyle=COL[grp[i]]; ctx.fill(); ctx.globalAlpha=1;
+               ctx.lineWidth=1; ctx.strokeStyle=COL[grp[i]]; ctx.stroke(); }
+      }
+      ctx.globalAlpha=1;
+    }
+    function render(){
+      var s=parseFloat(sl.value); document.getElementById('est-sv').textContent=s.toFixed(2);
+      var T=treatedSet(s), sum=0,n=0;
+      for(i=0;i<N;i++){ if(T[i]){ sum+=EFF[grp[i]]; n++; } }
+      var att=n?sum/n:0;
+      drawDots(T);
+      document.getElementById('est-att-bar').style.width=pct(att)+'%';
+      document.getElementById('est-att').textContent='+'+att.toFixed(2);
+      var note;
+      if(s<0.05) note='Uptake is unrelated to who benefits, so the treated look like everyone else: <b>ATT ≈ ATE ≈ +0.30</b>. This is what randomisation buys you — the estimand question barely matters.';
+      else note='Now the high-responders are over-represented among the treated, so <b>ATT = +'+att.toFixed(2)+'</b> — well above the <b>+0.30</b> ATE. The program looks great <i>for those who take it</i>, but a mandatory roll-out (the ATE) would do less. Reporting ATT as if it were ATE would oversell it to the reluctant majority. The per-type effects (CATE: +0.50 / +0.30 / +0.10) never change — only <i>who is in the average</i> does.';
+      document.getElementById('est-note').innerHTML=note;
+    }
+    sl.addEventListener('input',render); render();
   })();
 })();
 </script>
