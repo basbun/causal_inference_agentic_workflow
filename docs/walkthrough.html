@@ -103,7 +103,47 @@
   .flow .box{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;color:var(--ink)}
   .flow .arrow{color:var(--accent)}
   ul li{color:#d3d8e2}
-  @media(max-width:900px){.wrap{grid-template-columns:1fr}nav{display:none}.grid3,.grid2{grid-template-columns:1fr}}
+  /* ---- interactive widgets ---- */
+  .widget{background:#10141d;border:1px solid #2c3344;border-radius:14px;padding:20px 22px;margin:18px 0}
+  .widget .wtitle{font:700 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-bottom:4px}
+  .widget .wsub{color:var(--muted);font-size:13.5px;margin:0 0 16px}
+  .wctrl{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+  .wctrl label{font-size:13px;color:#cdd3df;font-family:var(--mono)}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:6px;border-radius:6px;
+    background:linear-gradient(90deg,#2a4a7a,#6ea8fe);outline:none;flex:1;min-width:160px;max-width:340px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:#dbe7ff;border:2px solid #6ea8fe;cursor:pointer;box-shadow:0 0 0 3px #6ea8fe33}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#dbe7ff;border:2px solid #6ea8fe;cursor:pointer}
+  .wval{font:700 14px var(--mono);color:var(--teal);min-width:46px;text-align:right}
+  .simbar{display:grid;grid-template-columns:96px 1fr 64px;align-items:center;gap:12px;margin:9px 0;font-size:13px}
+  .simbar .lab{color:#cdd3df;font-family:var(--mono)}
+  .simbar .v{font-family:var(--mono);font-weight:700;text-align:right}
+  .simbar .bar{height:16px}
+  .simbar .bar > i{transition:width .12s linear}
+  .wnote{font-size:13.5px;color:#c8cfdb;background:#141925;border-left:3px solid var(--teal);
+    padding:10px 14px;border-radius:0 8px 8px 0;margin-top:14px;min-height:20px}
+  .btn{font:600 13px var(--mono);background:#1c2740;color:#9ec1ff;border:1px solid #28406a;
+    border-radius:8px;padding:8px 16px;cursor:pointer;transition:background .15s}
+  .btn:hover{background:#24345a} .btn.on{background:#10331f;color:var(--good);border-color:#1c5234}
+  .chk{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:14px}
+  .chk label{display:flex;align-items:center;gap:7px;font-size:13.5px;color:#cdd3df;cursor:pointer;
+    background:#161b26;border:1px solid #2c3344;border-radius:8px;padding:7px 12px}
+  .chk input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+  .dagsvg{width:100%;height:auto;background:#0b0d13;border:1px solid var(--line);border-radius:10px}
+  .dagsvg .edge{stroke-width:2.5;fill:none;transition:stroke .2s,opacity .2s}
+  .dagsvg .node-ring{fill:none;stroke:var(--teal);stroke-width:3;stroke-dasharray:4 3;opacity:0;transition:opacity .2s}
+  .dagsvg .node-ring.on{opacity:1}
+  .wgrid{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
+  .verdict-box{font-size:13.5px}
+  .verdict-box .vrow{display:flex;gap:9px;align-items:flex-start;margin:8px 0;padding:8px 10px;border-radius:8px;background:#141925}
+  .verdict-box .vrow .ic{font-weight:700;font-family:var(--mono)}
+  .vrow.ok{border-left:3px solid var(--good)} .vrow.ok .ic{color:var(--good)}
+  .vrow.bad{border-left:3px solid var(--bad)} .vrow.bad .ic{color:var(--bad)}
+  .vrow.warn{border-left:3px solid var(--warn)} .vrow.warn .ic{color:var(--warn)}
+  canvas{display:block;width:100%;height:auto;background:#0b0d13;border:1px solid var(--line);border-radius:10px}
+  .canvrow{display:flex;gap:20px;align-items:center;font-size:12.5px;color:var(--muted);margin-top:10px;flex-wrap:wrap}
+  .swatch{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+  @media(max-width:900px){.wrap{grid-template-columns:1fr}nav{display:none}.grid3,.grid2{grid-template-columns:1fr}.wgrid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -211,6 +251,28 @@
     <p class="legend">Same data, two answers: <b>+0.3</b> honestly (within strata) vs <b>+1.1</b> naively.
     This is Simpson's paradox in miniature — and it is exactly the pattern you'll meet in Part III, where
     the naive efficacy estimate is <code>+1.03</code> against a truth of <code>+0.30</code>.</p>
+
+    <div class="widget" id="w-sel">
+      <div class="wtitle">⚙ Interactive — selection-bias simulator</div>
+      <p class="wsub">A live population of 2,000 units. A hidden confounder pushes units toward both
+      treatment and higher outcomes. The <b>true effect is fixed at +0.30</b>. Drag the slider and watch
+      the <b>naive</b> comparison run away while a model that adjusts for the confounder stays honest.</p>
+      <div class="wctrl">
+        <label>confounder&nbsp;strength&nbsp;γ</label>
+        <input type="range" id="sel-g" min="0" max="2" step="0.05" value="1">
+        <span class="wval" id="sel-gv">1.00</span>
+      </div>
+      <div class="simbar"><span class="lab">Naive</span>
+        <div class="bar"><i id="sel-naive-bar" style="background:var(--bad)"></i><div class="truth-mark" id="sel-tick1"></div></div>
+        <span class="v" id="sel-naive" style="color:var(--bad)"></span></div>
+      <div class="simbar"><span class="lab">Adjusted</span>
+        <div class="bar"><i id="sel-adj-bar" style="background:var(--accent)"></i><div class="truth-mark" id="sel-tick2"></div></div>
+        <span class="v" id="sel-adj" style="color:var(--accent)"></span></div>
+      <div class="simbar"><span class="lab" style="color:#fff">True effect</span>
+        <div class="bar"><i style="width:0"></i><div class="truth-mark" id="sel-tick3"></div></div>
+        <span class="v" style="color:#fff">+0.30</span></div>
+      <p class="wnote" id="sel-note"></p>
+    </div>
   </section>
 
   <section id="estimand">
@@ -289,6 +351,51 @@
     People throw <i>every</i> available variable into the model. But adjusting for a mediator hides the
     effect, and adjusting for a collider <i>manufactures</i> bias from nothing. More controls is not safer
     — the DAG, not data availability, decides what goes in.</div>
+
+    <div class="widget" id="w-dag">
+      <div class="wtitle">⚙ Interactive — build your adjustment set</div>
+      <p class="wsub">The causal effect flows <b>T → M → Y</b>. <b>X</b> is a confounder
+      (<code>T ← X → Y</code>); <b>C</b> is a collider (<code>T → C ← Y</code>). Tick the variables you'd
+      "control for" and see what the choice does to your estimate. There is exactly one correct set.</p>
+      <div class="wgrid">
+        <div>
+          <svg class="dagsvg" viewBox="0 0 520 290">
+            <defs><marker id="ah" markerWidth="9" markerHeight="9" refX="7.5" refY="3" orient="auto"><path d="M0,0 L7.5,3 L0,6 Z" fill="#7b8497"/></marker></defs>
+            <!-- edges -->
+            <line class="edge" id="eXT" x1="241.5" y1="51.9" x2="108.5" y2="138.1" marker-end="url(#ah)"/>
+            <line class="edge" id="eXY" x1="278.5" y1="51.9" x2="411.5" y2="138.1" marker-end="url(#ah)"/>
+            <line class="edge" id="eTM" x1="112" y1="150" x2="238" y2="150" marker-end="url(#ah)"/>
+            <line class="edge" id="eMY" x1="282" y1="150" x2="408" y2="150" marker-end="url(#ah)"/>
+            <line class="edge" id="eTC" x1="108.7" y1="161.6" x2="241.3" y2="243.4" marker-end="url(#ah)"/>
+            <line class="edge" id="eYC" x1="411.3" y1="161.6" x2="278.7" y2="243.4" marker-end="url(#ah)"/>
+            <!-- conditioning rings -->
+            <circle class="node-ring" id="ringX" cx="260" cy="40" r="29"/>
+            <circle class="node-ring" id="ringM" cx="260" cy="150" r="29"/>
+            <circle class="node-ring" id="ringC" cx="260" cy="255" r="29"/>
+            <!-- nodes -->
+            <circle cx="260" cy="40" r="22" fill="#1c2740" stroke="#28406a"/><text x="260" y="45" fill="#9ec1ff" font-size="15" text-anchor="middle" font-family="monospace">X</text>
+            <circle cx="90" cy="150" r="22" fill="#202632" stroke="#3a4252"/><text x="90" y="155" fill="#e6e8ee" font-size="15" text-anchor="middle" font-family="monospace">T</text>
+            <circle cx="260" cy="150" r="22" fill="#241a33" stroke="#3d2a5c"/><text x="260" y="155" fill="#c4a4f5" font-size="15" text-anchor="middle" font-family="monospace">M</text>
+            <circle cx="430" cy="150" r="22" fill="#202632" stroke="#3a4252"/><text x="430" y="155" fill="#e6e8ee" font-size="15" text-anchor="middle" font-family="monospace">Y</text>
+            <circle cx="260" cy="255" r="22" fill="#331515" stroke="#5a1f1f"/><text x="260" y="260" fill="#f87171" font-size="15" text-anchor="middle" font-family="monospace">C</text>
+          </svg>
+          <div class="canvrow">
+            <span><span class="swatch" style="background:#5eead4"></span>causal path</span>
+            <span><span class="swatch" style="background:#f87171"></span>open backdoor / induced bias</span>
+            <span><span class="swatch" style="background:#7b8497"></span>blocked / inactive</span>
+            <span>dashed ring = conditioned on</span>
+          </div>
+        </div>
+        <div>
+          <div class="chk">
+            <label><input type="checkbox" id="adjX" checked> adjust for <b>&nbsp;X</b></label>
+            <label><input type="checkbox" id="adjM"> adjust for <b>&nbsp;M</b></label>
+            <label><input type="checkbox" id="adjC"> adjust for <b>&nbsp;C</b></label>
+          </div>
+          <div class="verdict-box" id="dag-verdict"></div>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section id="identification">
@@ -357,6 +464,23 @@
     <div class="callout"><b>Why run all four?</b> If the naive number is wild but ANCOVA, IPW, and AIPW agree
     with each other, the estimate isn't an artifact of one modeling choice. Convergence across methods that
     fail <i>differently</i> is real evidence.</div>
+
+    <div class="widget" id="w-ipw">
+      <div class="wtitle">⚙ Interactive — watch IPW rebalance a confounder</div>
+      <p class="wsub">Here treated units (orange) skew toward high values of a confounder X, while controls
+      (blue) skew low — so the groups aren't comparable. Click the button to apply <b>ATT weights</b>
+      <code>e/(1−e)</code> to the controls and watch their distribution slide over to match the treated,
+      driving the standardized mean difference toward zero.</p>
+      <canvas id="ipw-canvas" width="900" height="300"></canvas>
+      <div class="canvrow">
+        <span><span class="swatch" style="background:#fbbf24"></span>treated</span>
+        <span><span class="swatch" style="background:#6ea8fe"></span>control</span>
+        <span>SMD on X: <b id="ipw-smd" style="font-family:var(--mono);color:var(--ink)"></b></span>
+        <button class="btn" id="ipw-btn">Apply IPW weights ▶</button>
+      </div>
+      <p class="wnote" id="ipw-note">Before weighting, the control group is the wrong comparison — its X
+      distribution barely overlaps the treated. That gap <i>is</i> the confounding.</p>
+    </div>
   </section>
 
   <section id="assumptions">
@@ -610,5 +734,144 @@ pytest tests/ -q                           <span class="c"># guards: ATT weights
   </main>
 </div>
 <footer>A concepts-first guide · manager-leadership v1.0 · synthetic data with a known ground-truth effect.</footer>
+<script>
+(function(){
+  "use strict";
+  var sigmoid = function(z){ return 1/(1+Math.exp(-z)); };
+
+  // Deterministic PRNG + cached standard-normal / uniform draws, so widgets are
+  // smooth and reproducible as parameters change.
+  function makeRNG(seed){ var s=seed>>>0; return function(){ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }; }
+  function gaussArr(n, rng){ var a=[],i,u,v; for(i=0;i<n;i++){ u=0;v=0; while(u===0)u=rng(); while(v===0)v=rng(); a.push(Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)); } return a; }
+  function uniArr(n, rng){ var a=[],i; for(i=0;i<n;i++) a.push(rng()); return a; }
+
+  /* ============ Widget 1 — selection-bias simulator ============ */
+  (function(){
+    var N=2000, tau=0.30, rng=makeRNG(12345);
+    var Q=gaussArr(N,rng), UT=uniArr(N,rng), eps=gaussArr(N,rng);
+    var sl=document.getElementById('sel-g');
+    if(!sl) return;
+    var SCALE=3.0; // x-axis max for the bars
+    function pct(v){ return Math.max(0, Math.min(100, (v/SCALE)*100)); }
+    function partialSlope(arr){ // residualize Y,T on Q via simple OLS, FWL slope
+      var mq=0,ma=0,i; for(i=0;i<N;i++){mq+=Q[i];ma+=arr[i];} mq/=N;ma/=N;
+      var sxy=0,sxx=0; for(i=0;i<N;i++){sxy+=(Q[i]-mq)*(arr[i]-ma);sxx+=(Q[i]-mq)*(Q[i]-mq);}
+      var b=sxy/sxx, r=[]; for(i=0;i<N;i++) r.push(arr[i]-(ma+b*(Q[i]-mq))); return r;
+    }
+    function recompute(g){
+      var T=[],Y=[],i,p;
+      for(i=0;i<N;i++){ p=sigmoid(-0.4+g*Q[i]); T.push(UT[i]<p?1:0); Y.push(3+g*Q[i]+tau*T[i]+0.5*eps[i]); }
+      var st=0,ct=0,sc=0,cc=0; for(i=0;i<N;i++){ if(T[i]){st+=Y[i];ct++;} else {sc+=Y[i];cc++;} }
+      var naive=st/ct-sc/cc;
+      var rY=partialSlope(Y), rT=partialSlope(T), num=0,den=0;
+      for(i=0;i<N;i++){ num+=rT[i]*rY[i]; den+=rT[i]*rT[i]; }
+      var adj=num/den;
+      return {naive:naive, adj:adj};
+    }
+    function fmt(v){ return (v>=0?'+':'')+v.toFixed(2); }
+    var tickL = pct(0.30)+'%';
+    ['sel-tick1','sel-tick2','sel-tick3'].forEach(function(id){ document.getElementById(id).style.left=tickL; });
+    function render(){
+      var g=parseFloat(sl.value);
+      document.getElementById('sel-gv').textContent=g.toFixed(2);
+      var r=recompute(g);
+      document.getElementById('sel-naive-bar').style.width=pct(r.naive)+'%';
+      document.getElementById('sel-adj-bar').style.width=pct(r.adj)+'%';
+      document.getElementById('sel-naive').textContent=fmt(r.naive);
+      document.getElementById('sel-adj').textContent=fmt(r.adj);
+      var bias=r.naive-tau, note;
+      if(g<0.05) note='With no confounding (γ=0), even the naive comparison is unbiased — the groups are already comparable. This is the randomized-experiment case.';
+      else note='The naive estimate is now <b>'+fmt(r.naive)+'</b> — overstating the truth by <b>'+fmt(bias)+'</b> of pure selection bias. The adjusted estimate stays near <b>+0.30</b> because it compares like with like. <i>Same data, two very different answers.</i>';
+      document.getElementById('sel-note').innerHTML=note;
+    }
+    sl.addEventListener('input',render); render();
+  })();
+
+  /* ============ Widget 2 — DAG adjustment-set explorer ============ */
+  (function(){
+    var X=document.getElementById('adjX'); if(!X) return;
+    var M=document.getElementById('adjM'), C=document.getElementById('adjC');
+    var GREY='#7b8497', RED='#f87171', TEAL='#5eead4', DIM='#3a4252';
+    function set(id,color,dash){ var e=document.getElementById(id); e.setAttribute('stroke',color); e.setAttribute('stroke-dasharray', dash?'6 4':'0'); }
+    function ring(id,on){ document.getElementById(id).classList.toggle('on',on); }
+    function render(){
+      var aX=X.checked, aM=M.checked, aC=C.checked;
+      ring('ringX',aX); ring('ringM',aM); ring('ringC',aC);
+      // confounding backdoor T<-X->Y : red if X not adjusted, dim if blocked
+      set('eXT', aX?DIM:RED, aX); set('eXY', aX?DIM:RED, aX);
+      // causal path T->M->Y : teal normally, red+dashed (blocked) if M adjusted
+      set('eTM', aM?RED:TEAL, aM); set('eMY', aM?RED:TEAL, aM);
+      // collider T->C<-Y : grey normally, red if C adjusted (path opened)
+      set('eTC', aC?RED:GREY, false); set('eYC', aC?RED:GREY, false);
+
+      var rows=[];
+      if(!aX) rows.push(['bad','✗','<b>Backdoor path open.</b> T ← X → Y is unblocked, so confounding leaks in. Your estimate mixes the real effect with X’s influence — <b>biased</b>.']);
+      else    rows.push(['ok','✓','<b>Backdoor blocked.</b> Conditioning on the confounder X closes T ← X → Y. Good.']);
+      if(aM)  rows.push(['bad','✗','<b>Mediator controlled.</b> You’ve conditioned on M, which sits <i>on</i> the causal path T → M → Y. That removes the very effect you’re trying to measure — the estimate collapses toward <b>zero</b>.']);
+      if(aC)  rows.push(['bad','✗','<b>Collider opened.</b> C is a common <i>effect</i> of T and Y. Conditioning on it creates a spurious T–Y association out of nothing — <b>collider bias</b>.']);
+      var ok = aX && !aM && !aC;
+      if(ok)  rows.unshift(['ok','★','<b>Identified.</b> Adjustment set = {X}. Every backdoor is blocked, and you’ve touched no mediator or collider. This recovers the total causal effect of T on Y.']);
+      else    rows.unshift(['warn','!','<b>Not the clean estimate.</b> The correct set here is <b>{X} only</b> — adjust the confounder, leave the mediator and collider alone.']);
+      document.getElementById('dag-verdict').innerHTML = rows.map(function(r){
+        return '<div class="vrow '+r[0]+'"><span class="ic">'+r[1]+'</span><span>'+r[2]+'</span></div>';
+      }).join('');
+    }
+    [X,M,C].forEach(function(c){ c.addEventListener('change',render); }); render();
+  })();
+
+  /* ============ Widget 3 — IPW reweighting / balance ============ */
+  (function(){
+    var cv=document.getElementById('ipw-canvas'); if(!cv) return;
+    var N=3000, rng=makeRNG(999), Xn=gaussArr(N,rng), Ut=uniArr(N,rng);
+    var X=[],T=[],i,p; for(i=0;i<N;i++){ X.push(Xn[i]); p=sigmoid(-1.0+1.1*Xn[i]); T.push(Ut[i]<p?1:0); }
+    var tr=[],co=[]; for(i=0;i<N;i++)(T[i]?tr:co).push(i);
+    function wmeanvar(idx,w){ var sw=0,sx=0; idx.forEach(function(i){sw+=w[i];sx+=w[i]*X[i];}); var m=sx/sw,sv=0;
+      idx.forEach(function(i){sv+=w[i]*(X[i]-m)*(X[i]-m);}); return [m,sv/sw]; }
+    var ones={}; tr.concat(co).forEach(function(i){ones[i]=1;});
+    var wAtt={}; tr.forEach(function(i){wAtt[i]=1;}); co.forEach(function(i){var e=sigmoid(-1.0+1.1*X[i]); wAtt[i]=e/(1-e);});
+    function smd(w){ var a=wmeanvar(tr,w), b=wmeanvar(co,w); return (a[0]-b[0])/Math.sqrt((a[1]+b[1])/2); }
+    // histogram bins
+    var LO=-4, HI=4, B=32, bw=(HI-LO)/B;
+    function hist(idx,w){ var h=new Array(B).fill(0),tot=0; idx.forEach(function(i){ var k=Math.floor((X[i]-LO)/bw); if(k>=0&&k<B){h[k]+=w[i];tot+=w[i];} }); for(var k=0;k<B;k++)h[k]/=(tot*bw); return h; }
+    var W=cv.width, H=cv.height, padB=34, padT=14;
+    function draw(controlW, frac){
+      var ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,H);
+      var hT=hist(tr,ones), hC0=hist(co,ones), hC1=hist(co,wAtt), k;
+      var maxv=0; [hT,hC0,hC1].forEach(function(h){h.forEach(function(v){if(v>maxv)maxv=v;});});
+      function bar(h,color,alpha){ ctx.globalAlpha=alpha; ctx.fillStyle=color;
+        for(k=0;k<B;k++){ var x=(k/B)*W, y=padT+(H-padB-padT)*(1-h[k]/maxv), bh=(H-padB-padT)*(h[k]/maxv);
+          ctx.fillRect(x+1, y, W/B-2, bh); } ctx.globalAlpha=1; }
+      // interpolate control hist from unweighted -> weighted
+      var hC=[]; for(k=0;k<B;k++) hC.push(hC0[k]*(1-frac)+hC1[k]*frac);
+      bar(hC, '#6ea8fe', 0.55);
+      bar(hT, '#fbbf24', 0.55);
+      // axis
+      ctx.strokeStyle='#2a2f3a'; ctx.beginPath(); ctx.moveTo(0,H-padB); ctx.lineTo(W,H-padB); ctx.stroke();
+      ctx.fillStyle='#9aa3b2'; ctx.font='12px monospace'; ctx.textAlign='center';
+      [-3,-2,-1,0,1,2,3].forEach(function(t){ var x=((t-LO)/(HI-LO))*W; ctx.fillText(t.toFixed(0), x, H-14); });
+      ctx.fillText('confounder X  →', W/2, H-2);
+    }
+    var btn=document.getElementById('ipw-btn'), smdEl=document.getElementById('ipw-smd'),
+        note=document.getElementById('ipw-note'), applied=false, anim=null;
+    function setSMD(v){ smdEl.textContent=(v>=0?'+':'')+v.toFixed(3); smdEl.style.color = Math.abs(v)<0.1 ? '#4ade80' : '#f87171'; }
+    draw(ones,0); setSMD(smd(ones));
+    function animate(to){
+      var from = applied?1:0, start=null, dur=650;
+      cancelAnimationFrame(anim);
+      function step(ts){ if(!start)start=ts; var t=Math.min(1,(ts-start)/dur), f=from+(to-from)*(t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2);
+        draw(null,f); setSMD(smd(ones)*(1-f)+smd(wAtt)*f); if(t<1) anim=requestAnimationFrame(step); }
+      anim=requestAnimationFrame(step);
+    }
+    btn.addEventListener('click',function(){
+      applied=!applied; animate(applied?1:0);
+      btn.classList.toggle('on',applied);
+      btn.textContent = applied ? 'Remove weights ◀' : 'Apply IPW weights ▶';
+      note.innerHTML = applied
+        ? 'After weighting, the control distribution lines up with the treated and the SMD drops below the 0.1 threshold. The reweighted controls now stand in as a fair counterfactual — <i>this</i> is what "adjusting" actually does.'
+        : 'Before weighting, the control group is the wrong comparison — its X distribution barely overlaps the treated. That gap <i>is</i> the confounding.';
+    });
+  })();
+})();
+</script>
 </body>
 </html>
