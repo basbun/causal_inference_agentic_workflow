@@ -1,0 +1,74 @@
+plan_version: manager-leadership v1.0
+estimand: ATT
+estimand_rationale: >
+  Voluntary participation makes the effect on participants the decision-relevant
+  quantity for whether to keep offering the program.
+
+unit_of_analysis: individual manager
+time_zero: January (enrollment)
+follow_up_window: 6 months (January -> June survey)
+
+treatment:
+  variable: entered_program
+  definition: 1 = entered the Jan-Mar leadership program, 0 = did not
+  assignment: voluntary self-selection; uneven departmental encouragement
+
+eligibility: all managers in post in January
+risk_set: single cohort, no staggered timing
+
+adjustment_set:
+  pre_treatment_covariates:
+    - gender
+    - age
+    - tenure_years
+    - region
+    - organization
+    - job_family
+    - team_size
+    - span_of_control
+    - performance_rating
+    - dept_promo_intensity
+  baseline_outcomes:
+    - efficacy_baseline
+    - workload_baseline
+    - stay_baseline
+  excluded_post_treatment:
+    - efficacy_followup
+    - workload_followup
+    - stay_followup
+    - exit_month
+    - active_3m
+    - active_6m
+    - active_9m
+    - active_12m
+
+identification:
+  strategy: backdoor adjustment
+  status: identified
+  key_untestable_assumption: conditional exchangeability (no unmeasured confounding)
+
+estimators:
+  primary: AIPW (doubly robust)
+  cross_checks: [ANCOVA (OLS), IPW (ATT)]
+  reference_only: naive difference in means
+
+guardrails:
+  balance_max_abs_smd: 0.10
+  att_positivity_treated_off_support_max: 0.05
+
+refutation:
+  - placebo_shuffled_treatment
+  - trim_to_overlap
+  - e_value_unobserved_confounding
+
+inference:
+  method: nonparametric bootstrap
+  n_boot: 500
+  interval: percentile 95% CI
+  clustering: none (individual-level assignment)
+
+outcomes:
+  primary: Manager Efficacy Index (efficacy_followup)
+  secondary:
+    - Stay Intention Index (stay_followup)
+    - Workload Index (workload_followup)

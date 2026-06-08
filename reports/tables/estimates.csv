@@ -1,0 +1,13 @@
+estimator,estimand,point,se,ci_low,ci_high,n,outcome,truth
+Naive (unadjusted),ATT,1.0339,0.0346,0.9684,1.0998,9000,Manager Efficacy Index,0.3
+ANCOVA (OLS),ATT,0.4265,0.025,0.3788,0.4757,9000,Manager Efficacy Index,0.3
+IPW (ATT),ATT,0.4198,0.0374,0.3422,0.4918,9000,Manager Efficacy Index,0.3
+AIPW (doubly robust),ATT,0.4166,0.0255,0.364,0.4653,9000,Manager Efficacy Index,0.3
+Naive (unadjusted),ATT,0.767,0.0315,0.7007,0.8294,9000,Stay Intention Index,0.25
+ANCOVA (OLS),ATT,0.3048,0.0231,0.2567,0.3491,9000,Stay Intention Index,0.25
+IPW (ATT),ATT,0.309,0.0339,0.2367,0.3749,9000,Stay Intention Index,0.25
+AIPW (doubly robust),ATT,0.3027,0.0242,0.2499,0.3462,9000,Stay Intention Index,0.25
+Naive (unadjusted),ATT,-0.1124,0.0264,-0.1608,-0.0585,9000,Workload Index,0.15
+ANCOVA (OLS),ATT,0.0716,0.022,0.0308,0.1125,9000,Workload Index,0.15
+IPW (ATT),ATT,0.0545,0.0286,0.0015,0.1134,9000,Workload Index,0.15
+AIPW (doubly robust),ATT,0.0602,0.0228,0.0186,0.1045,9000,Workload Index,0.15
