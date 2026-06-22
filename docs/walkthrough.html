@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Causal Inference — Concepts &amp; an End-to-End Example</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a22; --panel2:#1d212c; --ink:#e6e8ee; --muted:#9aa3b2;
+    --line:#2a2f3a; --accent:#6ea8fe; --accent2:#c4a4f5; --good:#4ade80; --warn:#fbbf24; --bad:#f87171;
+    --teal:#5eead4;
+    --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 24px;display:grid;
+    grid-template-columns:250px 1fr;gap:44px}
+  header{background:linear-gradient(135deg,#1b2030,#11131b);border-bottom:1px solid var(--line)}
+  header .inner{max-width:1200px;margin:0 auto;padding:52px 24px 44px}
+  header h1{margin:0 0 10px;font-size:32px;letter-spacing:-.5px}
+  header p{margin:0;color:var(--muted);max-width:780px;font-size:17px}
+  .tag{display:inline-block;font:600 11px/1 var(--mono);letter-spacing:.08em;
+    text-transform:uppercase;color:var(--accent);background:#1c2740;
+    border:1px solid #28406a;border-radius:999px;padding:6px 10px;margin-bottom:16px}
+  nav{position:sticky;top:18px;align-self:start;font-size:13.5px;border-left:1px solid var(--line);
+    padding-left:16px;max-height:94vh;overflow:auto}
+  nav a{display:block;color:var(--muted);padding:4px 0}
+  nav a:hover{color:var(--ink);text-decoration:none}
+  nav .h2{margin-top:16px;margin-bottom:4px;font-weight:700;color:var(--accent);font-size:11px;
+    text-transform:uppercase;letter-spacing:.08em}
+  nav .h2:first-child{margin-top:0}
+  main{min-width:0;padding:40px 0 90px}
+  section{margin-bottom:54px;scroll-margin-top:20px}
+  .part-label{font:700 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent2);
+    border-top:1px solid var(--line);padding-top:24px;margin-bottom:-8px}
+  h2{font-size:25px;margin:6px 0 16px;letter-spacing:-.3px}
+  h3{font-size:18px;margin:28px 0 8px;color:#dbe0ea}
+  h4{font-size:15px;margin:0 0 6px}
+  p{color:#d3d8e2}
+  .lead{font-size:17px;color:#c8cfdb}
+  .muted{color:var(--muted)}
+  code{font-family:var(--mono);font-size:.86em;background:#222634;padding:2px 6px;border-radius:5px;color:#dbe3f1}
+  .eq{font-family:var(--mono);font-size:15px;background:#0b0d13;border:1px solid var(--line);
+    border-radius:10px;padding:14px 18px;overflow:auto;color:#dbe6f5;margin:14px 0;white-space:pre}
+  .eq .c{color:#6b7488}
+  .eq b{color:var(--teal);font-weight:600}
+  pre{background:#0b0d13;border:1px solid var(--line);border-radius:10px;padding:16px 18px;
+    overflow:auto;font-family:var(--mono);font-size:13px;line-height:1.55;color:#cdd6e6}
+  pre .c{color:#6b7488}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin:16px 0}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .card.tight{padding:14px 16px}
+  .card p{margin:0;color:var(--muted);font-size:14px}
+  .pill{font:600 11px/1 var(--mono);padding:4px 8px;border-radius:6px;display:inline-block;white-space:nowrap}
+  .pill.good{background:#10331f;color:var(--good);border:1px solid #1c5234}
+  .pill.warn{background:#33290f;color:var(--warn);border:1px solid #5a4413}
+  .pill.bad{background:#331515;color:var(--bad);border:1px solid #5a1f1f}
+  .pill.info{background:#10243a;color:var(--accent);border:1px solid #1d3a5e}
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:0}
+  ol.steps li{counter-increment:s;position:relative;padding:11px 12px 11px 54px;border:1px solid var(--line);
+    border-radius:10px;margin-bottom:8px;background:var(--panel)}
+  ol.steps li::before{content:counter(s);position:absolute;left:12px;top:50%;transform:translateY(-50%);
+    width:28px;height:28px;border-radius:50%;background:#1c2740;border:1px solid #28406a;color:var(--accent);
+    display:flex;align-items:center;justify-content:center;font:600 13px var(--mono)}
+  ol.steps li b{color:var(--ink)} ol.steps li span{color:var(--muted);font-size:14px}
+  .phase{display:inline-block;font:600 10px var(--mono);letter-spacing:.06em;padding:2px 7px;border-radius:5px;margin-left:8px}
+  .think{background:#241a33;color:#c4a4f5;border:1px solid #3d2a5c}
+  .code-ph{background:#10331f;color:var(--good);border:1px solid #1c5234}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
+  th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);font-weight:600;color:#cdd3df}
+  td.num{font-family:var(--mono);text-align:right}
+  tr.primary td{background:#15233a}
+  .bar{height:9px;border-radius:5px;background:#2a2f3a;position:relative;overflow:hidden;min-width:80px}
+  .bar > i{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
+  .truth-mark{position:absolute;top:-3px;bottom:-3px;width:2px;background:#fff}
+  .callout{border-left:3px solid var(--accent);background:#141925;padding:14px 18px;border-radius:0 10px 10px 0;margin:16px 0}
+  .callout.warn{border-color:var(--warn);background:#1d1809}
+  .callout.key{border-color:var(--teal);background:#0d201d}
+  .callout b{color:var(--ink)}
+  .callout .lab{font:700 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:4px}
+  .callout.warn .lab{color:var(--warn)} .callout.key .lab{color:var(--teal)}
+  figure{margin:18px 0;background:#fff;border-radius:12px;padding:10px;border:1px solid var(--line)}
+  figure img{display:block;width:100%;border-radius:6px}
+  figcaption{color:var(--muted);font-size:13px;margin-top:8px;padding:0 6px 4px}
+  .dag{font-family:var(--mono);font-size:13px;line-height:1.5;white-space:pre;color:#cdd6e6;
+    background:#0b0d13;border:1px solid var(--line);border-radius:10px;padding:18px;overflow:auto}
+  .legend{color:var(--muted);font-size:13px;margin-top:8px}
+  .motif{display:flex;flex-direction:column;align-items:center;text-align:center}
+  .motif svg{background:#0b0d13;border:1px solid var(--line);border-radius:10px;padding:6px;width:100%;height:auto}
+  .motif h4{margin:12px 0 4px}
+  .motif p{font-size:13px;color:var(--muted);margin:0}
+  .verdict{font:600 12px var(--mono);margin-top:8px}
+  .v-adjust{color:var(--good)} .v-dont{color:var(--bad)}
+  footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;padding:24px;text-align:center}
+  .flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;font-family:var(--mono);color:var(--muted);margin:12px 0}
+  .flow .box{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;color:var(--ink)}
+  .flow .arrow{color:var(--accent)}
+  ul li{color:#d3d8e2}
+  /* ---- interactive widgets ---- */
+  .widget{background:#10141d;border:1px solid #2c3344;border-radius:14px;padding:20px 22px;margin:18px 0}
+  .widget .wtitle{font:700 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-bottom:4px}
+  .widget .wsub{color:var(--muted);font-size:13.5px;margin:0 0 16px}
+  .wctrl{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+  .wctrl label{font-size:13px;color:#cdd3df;font-family:var(--mono)}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:6px;border-radius:6px;
+    background:linear-gradient(90deg,#2a4a7a,#6ea8fe);outline:none;flex:1;min-width:160px;max-width:340px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:#dbe7ff;border:2px solid #6ea8fe;cursor:pointer;box-shadow:0 0 0 3px #6ea8fe33}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#dbe7ff;border:2px solid #6ea8fe;cursor:pointer}
+  .wval{font:700 14px var(--mono);color:var(--teal);min-width:46px;text-align:right}
+  .simbar{display:grid;grid-template-columns:96px 1fr 64px;align-items:center;gap:12px;margin:9px 0;font-size:13px}
+  .simbar .lab{color:#cdd3df;font-family:var(--mono)}
+  .simbar .v{font-family:var(--mono);font-weight:700;text-align:right}
+  .simbar .bar{height:16px}
+  .simbar .bar > i{transition:width .12s linear}
+  .wnote{font-size:13.5px;color:#c8cfdb;background:#141925;border-left:3px solid var(--teal);
+    padding:10px 14px;border-radius:0 8px 8px 0;margin-top:14px;min-height:20px}
+  .btn{font:600 13px var(--mono);background:#1c2740;color:#9ec1ff;border:1px solid #28406a;
+    border-radius:8px;padding:8px 16px;cursor:pointer;transition:background .15s}
+  .btn:hover{background:#24345a} .btn.on{background:#10331f;color:var(--good);border-color:#1c5234}
+  .chk{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:14px}
+  .chk label{display:flex;align-items:center;gap:7px;font-size:13.5px;color:#cdd3df;cursor:pointer;
+    background:#161b26;border:1px solid #2c3344;border-radius:8px;padding:7px 12px}
+  .chk input{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
+  .dagsvg{width:100%;height:auto;background:#0b0d13;border:1px solid var(--line);border-radius:10px}
+  .dagsvg .edge{stroke-width:2.5;fill:none;transition:stroke .2s,opacity .2s}
+  .dagsvg .node-ring{fill:none;stroke:var(--teal);stroke-width:3;stroke-dasharray:4 3;opacity:0;transition:opacity .2s}
+  .dagsvg .node-ring.on{opacity:1}
+  .wgrid{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
+  .verdict-box{font-size:13.5px}
+  .verdict-box .vrow{display:flex;gap:9px;align-items:flex-start;margin:8px 0;padding:8px 10px;border-radius:8px;background:#141925}
+  .verdict-box .vrow .ic{font-weight:700;font-family:var(--mono)}
+  .vrow.ok{border-left:3px solid var(--good)} .vrow.ok .ic{color:var(--good)}
+  .vrow.bad{border-left:3px solid var(--bad)} .vrow.bad .ic{color:var(--bad)}
+  .vrow.warn{border-left:3px solid var(--warn)} .vrow.warn .ic{color:var(--warn)}
+  canvas{display:block;width:100%;height:auto;background:#0b0d13;border:1px solid var(--line);border-radius:10px}
+  .canvrow{display:flex;gap:20px;align-items:center;font-size:12.5px;color:var(--muted);margin-top:10px;flex-wrap:wrap}
+  .swatch{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+  @media(max-width:900px){.wrap{grid-template-columns:1fr}nav{display:none}.grid3,.grid2{grid-template-columns:1fr}.wgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="inner">
+    <span class="tag">A primer + a worked example</span>
+    <h1>Causal Inference, from first principles to a finished estimate</h1>
+    <p class="lead">This document teaches the ideas behind causal inference — potential outcomes,
+    confounding, DAGs, identification, and the estimator toolbox — and then shows them at work on a
+    real-shaped problem with a <b>known true answer</b>, so you can see exactly where the methods
+    succeed and where they fall short.</p>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav>
+    <div class="h2">Part I · Concepts</div>
+    <a href="#question">The causal question</a>
+    <a href="#potential">Potential outcomes</a>
+    <a href="#confounding">Why naive comparisons lie</a>
+    <a href="#estimand">Choosing an estimand</a>
+    <a href="#dags">DAGs: the grammar</a>
+    <a href="#identification">Identification strategies</a>
+    <a href="#estimators">The estimator toolbox</a>
+    <a href="#assumptions">The four assumptions</a>
+    <a href="#trust">Did it work? trust-building</a>
+    <div class="h2">Part II · The workflow</div>
+    <a href="#repo">What this repo enforces</a>
+    <a href="#tensteps">The 10 steps &amp; agents</a>
+    <div class="h2">Part III · Worked example</div>
+    <a href="#example">The program</a>
+    <a href="#ex-design">Design &amp; DAG</a>
+    <a href="#ex-results">Results vs ground truth</a>
+    <a href="#ex-diag">Diagnostics &amp; refutation</a>
+    <a href="#ex-interpret">Interpretation</a>
+    <a href="#run">Run it yourself</a>
+  </nav>
+
+  <main>
+
+  <!-- ================= PART I ================= -->
+  <div class="part-label">Part I — The concepts</div>
+
+  <section id="question">
+    <h2>A causal question is not a prediction question</h2>
+    <p>Prediction asks <i>"given what I see, what is Y likely to be?"</i> Causal inference asks
+    <i>"if I <b>intervene</b> and change T, how would Y change?"</i> The whole difference is the word
+    <b>intervene</b>. A model can correctly learn that people carrying lighters get more lung cancer — yet
+    confiscating lighters would do nothing, because smoking causes both. Prediction exploits associations;
+    causation requires you to know <i>why</i> the association exists.</p>
+    <div class="callout key"><span class="lab">The shift in notation</span>
+    We don't want <code>E[Y | T=1]</code> — the average outcome <i>among</i> those who happen to be treated
+    (an observation). We want <code>E[Y | do(T=1)]</code> — the average outcome if we <i>set</i> everyone's
+    treatment to 1 (an intervention). Causal inference is the discipline of recovering the second from data
+    that only contains the first.</div>
+  </section>
+
+  <section id="potential">
+    <h2>Potential outcomes &amp; the fundamental problem</h2>
+    <p>Each unit <code>i</code> has two <b>potential outcomes</b>: <code>Yᵢ(1)</code>, what would happen
+    if treated, and <code>Yᵢ(0)</code>, what would happen if not. The causal effect <i>for that unit</i>
+    is simply the difference:</p>
+    <div class="eq">causal effect for unit i  =  <b>Yᵢ(1) − Yᵢ(0)</b></div>
+    <p>The catch — the <b>Fundamental Problem of Causal Inference</b> — is that you only ever observe
+    <i>one</i> of them. A manager either took the program or didn't; her other timeline is gone forever.
+    The value we'd need is a <b>counterfactual</b>, and it is missing data, permanently.</p>
+    <table>
+      <tr><th>Manager</th><th>Took program (T)</th><th>Y(1) — trained</th><th>Y(0) — untrained</th><th>Effect</th></tr>
+      <tr><td>Ada</td><td>1</td><td>4.2</td><td style="color:var(--bad)">? missing</td><td class="muted">unknown</td></tr>
+      <tr><td>Ben</td><td>0</td><td style="color:var(--bad)">? missing</td><td>3.1</td><td class="muted">unknown</td></tr>
+    </table>
+    <div class="callout"><span class="lab">The whole game</span>
+    Because individual effects are unknowable, we estimate <b>averages</b> across groups — filling each
+    unit's missing cell using the other group. That swap is only valid if the groups are comparable.
+    <b>Every method in this primer is a different way of making them comparable.</b></div>
+  </section>
+
+  <section id="confounding">
+    <h2>Why the naive comparison lies: confounding &amp; selection</h2>
+    <p>The tempting estimate is the difference in observed averages, <code>E[Y|T=1] − E[Y|T=0]</code>.
+    Algebraically it equals the thing you want plus a poison term:</p>
+    <div class="eq">naive difference  =  <b>ATT</b>  +  ( E[Y(0)|T=1] − E[Y(0)|T=0] )
+                       <span class="c">└ true effect ┘   └────────── selection bias ──────────┘</span></div>
+    <p>The selection-bias term asks: <i>even untreated</i>, would the treated group have differed from the
+    controls? Whenever a common cause pushes units toward treatment <b>and</b> toward higher outcomes, the
+    answer is yes. That common cause is a <b>confounder</b>.</p>
+
+    <h3>A 30-second numeric demonstration</h3>
+    <p>Suppose motivated managers are both more likely to enroll <i>and</i> higher-scoring regardless of
+    training. Within each motivation level the true effect is <b>+0.3</b> — but the pooled numbers look far
+    bigger, because the treated pool is stuffed with high-motivation people:</p>
+    <div class="grid2">
+      <table>
+        <tr><th>Motivation</th><th>Trained</th><th>Untrained</th><th>Honest gap</th></tr>
+        <tr><td>High</td><td class="num">4.3</td><td class="num">4.0</td><td class="num">+0.3</td></tr>
+        <tr><td>Low</td><td class="num">3.3</td><td class="num">3.0</td><td class="num">+0.3</td></tr>
+      </table>
+      <table>
+        <tr><th>Pooled (ignoring motivation)</th><th>Value</th></tr>
+        <tr><td>Trained avg <span class="muted">(mostly high)</span></td><td class="num">4.2</td></tr>
+        <tr><td>Untrained avg <span class="muted">(mostly low)</span></td><td class="num">3.1</td></tr>
+        <tr class="primary"><td><b>Naive "effect"</b></td><td class="num"><b>+1.1</b></td></tr>
+      </table>
+    </div>
+    <p class="legend">Same data, two answers: <b>+0.3</b> honestly (within strata) vs <b>+1.1</b> naively.
+    This is Simpson's paradox in miniature — and it is exactly the pattern you'll meet in Part III, where
+    the naive efficacy estimate is <code>+1.03</code> against a truth of <code>+0.30</code>.</p>
+
+    <div class="widget" id="w-sel">
+      <div class="wtitle">⚙ Interactive — selection-bias simulator</div>
+      <p class="wsub">A live population of 2,000 units. A hidden confounder pushes units toward both
+      treatment and higher outcomes. The <b>true effect is fixed at +0.30</b>. Drag the slider and watch
+      the <b>naive</b> comparison run away while a model that adjusts for the confounder stays honest.</p>
+      <div class="wctrl">
+        <label>confounder&nbsp;strength&nbsp;γ</label>
+        <input type="range" id="sel-g" min="0" max="2" step="0.05" value="1">
+        <span class="wval" id="sel-gv">1.00</span>
+      </div>
+      <div class="simbar"><span class="lab">Naive</span>
+        <div class="bar"><i id="sel-naive-bar" style="background:var(--bad)"></i><div class="truth-mark" id="sel-tick1"></div></div>
+        <span class="v" id="sel-naive" style="color:var(--bad)"></span></div>
+      <div class="simbar"><span class="lab">Adjusted</span>
+        <div class="bar"><i id="sel-adj-bar" style="background:var(--accent)"></i><div class="truth-mark" id="sel-tick2"></div></div>
+        <span class="v" id="sel-adj" style="color:var(--accent)"></span></div>
+      <div class="simbar"><span class="lab" style="color:#fff">True effect</span>
+        <div class="bar"><i style="width:0"></i><div class="truth-mark" id="sel-tick3"></div></div>
+        <span class="v" style="color:#fff">+0.30</span></div>
+      <p class="wnote" id="sel-note"></p>
+    </div>
+  </section>
+
+  <section id="estimand">
+    <h2>Choosing an estimand: <i>which</i> average effect?</h2>
+    <p>"The effect" is ambiguous until you say <i>for whom</i>. Picking the estimand is a decision about
+    the <i>question</i>, made <b>before</b> any modeling.</p>
+    <div class="grid2">
+      <div class="card"><h4>ATE — Average Treatment Effect</h4><p><code>E[Y(1)−Y(0)]</code> over
+        <i>everyone</i>. The effect of a universal roll-out. "What if we made it mandatory?"</p></div>
+      <div class="card"><h4>ATT — …on the Treated</h4><p><code>E[Y(1)−Y(0) | T=1]</code> over those who
+        actually took it. "Did it help the people who opt in?" The right call for a <i>voluntary</i>
+        program.</p></div>
+      <div class="card"><h4>CATE — Conditional ATE</h4><p><code>E[Y(1)−Y(0) | X=x]</code> for a subgroup.
+        "For whom does it work best?" The basis of targeting and heterogeneity analysis.</p></div>
+      <div class="card"><h4>LATE — Local ATE</h4><p>The effect for <i>compliers</i> — units an instrument
+        nudges into treatment. What instrumental-variable designs recover; not the same as ATE or ATT.</p></div>
+    </div>
+    <div class="callout"><b>Why it matters:</b> these diverge when effects are heterogeneous. A strongly
+    positive ATT does not promise the program helps the reluctant majority (ATE). Quoting the wrong one is
+    a silent error no diagnostic will catch.</div>
+
+    <div class="widget" id="w-est">
+      <div class="wtitle">⚙ Interactive — watch ATE and ATT pull apart</div>
+      <p class="wsub">150 managers in three types whose <i>true</i> effects differ:
+      <b style="color:#f87171">high-responders +0.50</b>, <b style="color:#fbbf24">middle +0.30</b>,
+      <b style="color:#6ea8fe">low-responders +0.10</b>. The overall <b>ATE is fixed at +0.30</b>. Now drag
+      <b>selection on gains</b> — how much the people who benefit most are the ones who actually enrol. Filled
+      dots are treated. Watch the <b>ATT</b> (effect among the treated) climb away from the ATE.</p>
+      <canvas id="est-canvas" width="900" height="200"></canvas>
+      <div class="wctrl" style="margin-top:14px">
+        <label>selection&nbsp;on&nbsp;gains</label>
+        <input type="range" id="est-s" min="0" max="3" step="0.05" value="0">
+        <span class="wval" id="est-sv">0.00</span>
+      </div>
+      <div class="simbar"><span class="lab" style="color:#fff">ATE (everyone)</span>
+        <div class="bar"><i style="width:0"></i><div class="truth-mark" id="est-tickA"></div></div>
+        <span class="v" style="color:#fff">+0.30</span></div>
+      <div class="simbar"><span class="lab">ATT (treated)</span>
+        <div class="bar"><i id="est-att-bar" style="background:var(--teal)"></i><div class="truth-mark" id="est-tickB"></div></div>
+        <span class="v" id="est-att" style="color:var(--teal)"></span></div>
+      <p class="wnote" id="est-note"></p>
+    </div>
+  </section>
+
+  <section id="dags">
+    <h2>DAGs: the grammar of causal assumptions</h2>
+    <p>A <b>Directed Acyclic Graph</b> draws your beliefs about what causes what; arrows are direct causal
+    effects. Its power is mechanical — the graph's structure tells you which variables you <b>must</b>
+    adjust for, which to <b>leave alone</b>, and whether the effect is recoverable at all. Three building
+    blocks decide everything.</p>
+
+    <div class="grid3" style="margin-top:10px">
+      <div class="motif">
+        <svg viewBox="0 0 220 150"><defs><marker id="a1" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#6ea8fe"/></marker></defs>
+          <circle cx="110" cy="28" r="20" fill="#1c2740" stroke="#28406a"/><text x="110" y="33" fill="#9ec1ff" font-size="14" text-anchor="middle" font-family="monospace">X</text>
+          <circle cx="40" cy="115" r="20" fill="#171a22" stroke="#2a2f3a"/><text x="40" y="120" fill="#e6e8ee" font-size="14" text-anchor="middle" font-family="monospace">T</text>
+          <circle cx="180" cy="115" r="20" fill="#171a22" stroke="#2a2f3a"/><text x="180" y="120" fill="#e6e8ee" font-size="14" text-anchor="middle" font-family="monospace">Y</text>
+          <line x1="98" y1="42" x2="52" y2="98" stroke="#6ea8fe" stroke-width="2" marker-end="url(#a1)"/>
+          <line x1="122" y1="42" x2="168" y2="98" stroke="#6ea8fe" stroke-width="2" marker-end="url(#a1)"/>
+          <line x1="62" y1="115" x2="158" y2="115" stroke="#f87171" stroke-width="2" stroke-dasharray="5 4"/></svg>
+        <h4>Fork — a confounder</h4>
+        <p><code>T ← X → Y</code>. X creates a fake association (dashed). A backdoor path is open.</p>
+        <div class="verdict v-adjust">✓ ADJUST for X</div>
+      </div>
+      <div class="motif">
+        <svg viewBox="0 0 220 150"><defs><marker id="a2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#6ea8fe"/></marker></defs>
+          <circle cx="30" cy="75" r="20" fill="#171a22" stroke="#2a2f3a"/><text x="30" y="80" fill="#e6e8ee" font-size="14" text-anchor="middle" font-family="monospace">T</text>
+          <circle cx="110" cy="75" r="20" fill="#241a33" stroke="#3d2a5c"/><text x="110" y="80" fill="#c4a4f5" font-size="14" text-anchor="middle" font-family="monospace">M</text>
+          <circle cx="190" cy="75" r="20" fill="#171a22" stroke="#2a2f3a"/><text x="190" y="80" fill="#e6e8ee" font-size="14" text-anchor="middle" font-family="monospace">Y</text>
+          <line x1="52" y1="75" x2="88" y2="75" stroke="#6ea8fe" stroke-width="2" marker-end="url(#a2)"/>
+          <line x1="132" y1="75" x2="168" y2="75" stroke="#6ea8fe" stroke-width="2" marker-end="url(#a2)"/></svg>
+        <h4>Chain — a mediator</h4>
+        <p><code>T → M → Y</code>. M carries the effect. Adjusting for it deletes part of what you're
+        measuring.</p>
+        <div class="verdict v-dont">✗ do NOT adjust (for the total effect)</div>
+      </div>
+      <div class="motif">
+        <svg viewBox="0 0 220 150"><defs><marker id="a3" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#6ea8fe"/></marker></defs>
+          <circle cx="40" cy="28" r="20" fill="#171a22" stroke="#2a2f3a"/><text x="40" y="33" fill="#e6e8ee" font-size="14" text-anchor="middle" font-family="monospace">T</text>
+          <circle cx="180" cy="28" r="20" fill="#171a22" stroke="#2a2f3a"/><text x="180" y="33" fill="#e6e8ee" font-size="14" text-anchor="middle" font-family="monospace">Y</text>
+          <circle cx="110" cy="115" r="20" fill="#331515" stroke="#5a1f1f"/><text x="110" y="120" fill="#f87171" font-size="14" text-anchor="middle" font-family="monospace">C</text>
+          <line x1="56" y1="42" x2="98" y2="100" stroke="#6ea8fe" stroke-width="2" marker-end="url(#a3)"/>
+          <line x1="164" y1="42" x2="122" y2="100" stroke="#6ea8fe" stroke-width="2" marker-end="url(#a3)"/></svg>
+        <h4>Collider</h4>
+        <p><code>T → C ← Y</code>. The path is <i>closed</i> by default. Conditioning on C <b>opens</b> a
+        spurious one.</p>
+        <div class="verdict v-dont">✗ do NOT adjust (it creates bias)</div>
+      </div>
+    </div>
+
+    <h3>The backdoor criterion (the punchline)</h3>
+    <p>A "backdoor path" is any path from T to Y that begins with an arrow <i>into</i> T — these carry
+    confounding. An adjustment set <b>Z</b> identifies the causal effect if it (1) <b>blocks every backdoor
+    path</b> and (2) contains <b>no colliders or descendants of T</b>. Get Z right and a simple formula
+    returns the causal effect:</p>
+    <div class="eq">E[Y | do(T=1)]  =  Σ<sub>z</sub> <b>E[Y | T=1, Z=z] · P(Z=z)</b>   <span class="c"># "adjust, then average over Z"</span></div>
+    <div class="callout warn"><span class="lab">The most common own-goal</span>
+    People throw <i>every</i> available variable into the model. But adjusting for a mediator hides the
+    effect, and adjusting for a collider <i>manufactures</i> bias from nothing. More controls is not safer
+    — the DAG, not data availability, decides what goes in.</div>
+
+    <div class="widget" id="w-dag">
+      <div class="wtitle">⚙ Interactive — build your adjustment set</div>
+      <p class="wsub">The causal effect flows <b>T → M → Y</b>. <b>X</b> is a confounder
+      (<code>T ← X → Y</code>); <b>C</b> is a collider (<code>T → C ← Y</code>). Tick the variables you'd
+      "control for" and see what the choice does to your estimate. There is exactly one correct set.</p>
+      <div class="wgrid">
+        <div>
+          <svg class="dagsvg" viewBox="0 0 520 290">
+            <defs><marker id="ah" markerWidth="9" markerHeight="9" refX="7.5" refY="3" orient="auto"><path d="M0,0 L7.5,3 L0,6 Z" fill="#7b8497"/></marker></defs>
+            <!-- edges -->
+            <line class="edge" id="eXT" x1="241.5" y1="51.9" x2="108.5" y2="138.1" marker-end="url(#ah)"/>
+            <line class="edge" id="eXY" x1="278.5" y1="51.9" x2="411.5" y2="138.1" marker-end="url(#ah)"/>
+            <line class="edge" id="eTM" x1="112" y1="150" x2="238" y2="150" marker-end="url(#ah)"/>
+            <line class="edge" id="eMY" x1="282" y1="150" x2="408" y2="150" marker-end="url(#ah)"/>
+            <line class="edge" id="eTC" x1="108.7" y1="161.6" x2="241.3" y2="243.4" marker-end="url(#ah)"/>
+            <line class="edge" id="eYC" x1="411.3" y1="161.6" x2="278.7" y2="243.4" marker-end="url(#ah)"/>
+            <!-- conditioning rings -->
+            <circle class="node-ring" id="ringX" cx="260" cy="40" r="29"/>
+            <circle class="node-ring" id="ringM" cx="260" cy="150" r="29"/>
+            <circle class="node-ring" id="ringC" cx="260" cy="255" r="29"/>
+            <!-- nodes -->
+            <circle cx="260" cy="40" r="22" fill="#1c2740" stroke="#28406a"/><text x="260" y="45" fill="#9ec1ff" font-size="15" text-anchor="middle" font-family="monospace">X</text>
+            <circle cx="90" cy="150" r="22" fill="#202632" stroke="#3a4252"/><text x="90" y="155" fill="#e6e8ee" font-size="15" text-anchor="middle" font-family="monospace">T</text>
+            <circle cx="260" cy="150" r="22" fill="#241a33" stroke="#3d2a5c"/><text x="260" y="155" fill="#c4a4f5" font-size="15" text-anchor="middle" font-family="monospace">M</text>
+            <circle cx="430" cy="150" r="22" fill="#202632" stroke="#3a4252"/><text x="430" y="155" fill="#e6e8ee" font-size="15" text-anchor="middle" font-family="monospace">Y</text>
+            <circle cx="260" cy="255" r="22" fill="#331515" stroke="#5a1f1f"/><text x="260" y="260" fill="#f87171" font-size="15" text-anchor="middle" font-family="monospace">C</text>
+          </svg>
+          <div class="canvrow">
+            <span><span class="swatch" style="background:#5eead4"></span>causal path</span>
+            <span><span class="swatch" style="background:#f87171"></span>open backdoor / induced bias</span>
+            <span><span class="swatch" style="background:#7b8497"></span>blocked / inactive</span>
+            <span>dashed ring = conditioned on</span>
+          </div>
+        </div>
+        <div>
+          <div class="chk">
+            <label><input type="checkbox" id="adjX" checked> adjust for <b>&nbsp;X</b></label>
+            <label><input type="checkbox" id="adjM"> adjust for <b>&nbsp;M</b></label>
+            <label><input type="checkbox" id="adjC"> adjust for <b>&nbsp;C</b></label>
+          </div>
+          <div class="verdict-box" id="dag-verdict"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="identification">
+    <h2>Identification strategies: buying an assumption you can defend</h2>
+    <p>If a complete set of confounders were always observed, life would be easy. It rarely is — motivation,
+    ability, and health go unmeasured. Each <b>identification strategy</b> is a different trick for handling
+    the confounding you <i>can't</i> see, and each one <i>buys</i> a key untestable assumption. Choosing a
+    strategy <b>is</b> choosing which assumption you're willing to defend.</p>
+    <table>
+      <tr><th>Strategy</th><th>Use when…</th><th>The assumption you buy</th></tr>
+      <tr><td><b>Backdoor adjustment</b><br><span class="muted">regression · matching · IPW · AIPW</span></td>
+        <td>all important confounders are measured</td><td>no unmeasured confounding (conditional exchangeability)</td></tr>
+      <tr><td><b>Instrumental variables</b></td><td>an "as-if random" nudge shifts treatment but can't touch the outcome directly</td>
+        <td>the instrument is exogenous &amp; affects Y only through T (exclusion)</td></tr>
+      <tr><td><b>Difference-in-differences</b></td><td>treatment switches on at a known time, with before/after data for both groups</td>
+        <td>parallel trends — groups would have moved together absent treatment</td></tr>
+      <tr><td><b>Regression discontinuity</b></td><td>treatment is assigned by a cutoff on a running variable</td>
+        <td>units just above/below the cutoff are comparable (continuity)</td></tr>
+      <tr><td><b>Interrupted time series</b></td><td>one series, a clean intervention date, no control group</td>
+        <td>the pre-trend extrapolates; no coincident shock</td></tr>
+      <tr><td><b>Synthetic control</b></td><td>one treated aggregate unit, many donors, long pre-period</td>
+        <td>a weighted donor mix reproduces the counterfactual path</td></tr>
+      <tr><td><b>g-methods / MSM</b></td><td>time-varying treatment with time-varying confounders affected by past treatment</td>
+        <td>sequential exchangeability at each time step</td></tr>
+    </table>
+    <div class="callout key"><span class="lab">The mental model</span>
+    There is no assumption-free causal estimate. You always trade an untestable belief for an answer. Good
+    practice isn't avoiding assumptions — it's choosing ones that are <i>plausible for your setting</i> and
+    being loud about them.</div>
+  </section>
+
+  <section id="estimators">
+    <h2>The estimator toolbox (for a backdoor design)</h2>
+    <p>Once you've decided <i>what</i> to adjust for, several estimators turn that into a number. They fail
+    in different ways — which is the whole reason to run more than one.</p>
+
+    <h3>1 · Outcome regression / ANCOVA</h3>
+    <p>Model the outcome — <code>Y ~ T + X</code> — and read the coefficient on T (or predict both potential
+    outcomes per unit and average the gap). <b>Relies on</b> getting the <i>outcome</i> model roughly right;
+    breaks if the Y–X relationship is badly nonlinear.</p>
+
+    <h3>2 · The propensity score — one number instead of many</h3>
+    <p>The <b>propensity score</b> <code>e(X) = P(T=1 | X)</code> is each unit's probability of being
+    treated given its covariates. Rosenbaum &amp; Rubin proved a small miracle: if adjusting for all of X
+    removes confounding, then adjusting for the single number <code>e(X)</code> does too. It collapses a
+    high-dimensional balancing problem into one dimension you can match, stratify, or weight on.</p>
+
+    <h3>3 · Inverse-probability weighting (IPW)</h3>
+    <p>Reweight units to build a <b>pseudo-population</b> in which treatment looks random. For the <b>ATT</b>,
+    treated units get weight 1 and each control is weighted by <code>e(X)/(1−e(X))</code> — controls that
+    <i>look like</i> treated managers count for more, standing in for the missing counterfactuals.</p>
+    <div class="eq">ATT<sub>IPW</sub>  =  mean Y over treated  −  <b>weighted</b> mean Y over controls   <span class="c"># control weight = e/(1−e)</span></div>
+    <p><b>Relies on</b> getting the <i>propensity</i> model right; breaks when a few weights explode — a
+    positivity problem (next section).</p>
+
+    <h3>4 · Doubly-robust / AIPW — two shots at being right</h3>
+    <p>Augmented IPW fuses an outcome model <i>and</i> a propensity model so the estimate is consistent if
+    <b>either one</b> is correctly specified — and you don't have to know which. That's "double robustness,"
+    and it's why AIPW is the primary estimator in Part III.</p>
+    <div class="flow">
+      <span class="box">outcome model μ(X)</span><span class="arrow">＋</span>
+      <span class="box">propensity e(X)</span><span class="arrow">→</span>
+      <span class="box">AIPW</span><span class="arrow">→</span>
+      <span class="box">unbiased if <i>either</i> is right</span>
+    </div>
+    <div class="callout"><b>Why run all four?</b> If the naive number is wild but ANCOVA, IPW, and AIPW agree
+    with each other, the estimate isn't an artifact of one modeling choice. Convergence across methods that
+    fail <i>differently</i> is real evidence.</div>
+
+    <div class="widget" id="w-ipw">
+      <div class="wtitle">⚙ Interactive — watch IPW rebalance a confounder</div>
+      <p class="wsub">Here treated units (orange) skew toward high values of a confounder X, while controls
+      (blue) skew low — so the groups aren't comparable. Click the button to apply <b>ATT weights</b>
+      <code>e/(1−e)</code> to the controls and watch their distribution slide over to match the treated,
+      driving the standardized mean difference toward zero.</p>
+      <canvas id="ipw-canvas" width="900" height="300"></canvas>
+      <div class="canvrow">
+        <span><span class="swatch" style="background:#fbbf24"></span>treated</span>
+        <span><span class="swatch" style="background:#6ea8fe"></span>control</span>
+        <span>SMD on X: <b id="ipw-smd" style="font-family:var(--mono);color:var(--ink)"></b></span>
+        <button class="btn" id="ipw-btn">Apply IPW weights ▶</button>
+      </div>
+      <p class="wnote" id="ipw-note">Before weighting, the control group is the wrong comparison — its X
+      distribution barely overlaps the treated. That gap <i>is</i> the confounding.</p>
+    </div>
+  </section>
+
+  <section id="assumptions">
+    <h2>The four assumptions every backdoor estimate rests on</h2>
+    <div class="grid2">
+      <div class="card"><h4>1 · Conditional exchangeability <span class="pill warn">mostly untestable</span></h4>
+        <p>Given X, treatment is as-good-as-random: <code>Y(0),Y(1) ⟂ T | X</code> — i.e. no unmeasured
+        confounder. The big one. You defend it with domain knowledge and probe it with sensitivity analysis;
+        data alone can't confirm it.</p></div>
+      <div class="card"><h4>2 · Positivity / overlap <span class="pill good">testable</span></h4>
+        <p>Every kind of unit could have gone either way: <code>0 &lt; e(X) &lt; 1</code>. If some stratum is
+        <i>always</i> treated, there's no control to compare against — no model invents the missing
+        counterfactual. Checked directly from the propensity distribution.</p></div>
+      <div class="card"><h4>3 · Consistency <span class="pill info">definitional</span></h4>
+        <p>The treatment is well-defined and the observed outcome equals the potential outcome under the
+        treatment actually received. "The program" must mean one coherent thing.</p></div>
+      <div class="card"><h4>4 · SUTVA / no interference <span class="pill info">substantive</span></h4>
+        <p>One unit's treatment doesn't spill onto another's outcome. Plausible for individual training;
+        <i>not</i> for vaccines or strong network effects.</p></div>
+    </div>
+  </section>
+
+  <section id="trust">
+    <h2>Did it work? Diagnostics, refutation, and sensitivity</h2>
+    <p>An estimate is only as good as the checks it survives. Three families, each answering a different
+    worry.</p>
+    <h3>Diagnostics — "is my adjustment doing its job?"</h3>
+    <ul>
+      <li><b>Overlap:</b> plot the propensity distributions. Treated regions must have control mass beneath
+        them, or there is nothing to compare against.</li>
+      <li><b>Balance:</b> after weighting/matching, covariates should look the same in both groups. The
+        <b>standardized mean difference (SMD)</b> measures the gap in standard-deviation units; the
+        convention is <code>|SMD| &lt; 0.1</code>. This is the payoff check — it shows the confounders are no
+        longer lopsided.</li>
+    </ul>
+    <h3>Refutation — "can I break it?"</h3>
+    <ul>
+      <li><b>Placebo / negative control:</b> run the pipeline on something that <i>cannot</i> have an effect
+        (a shuffled treatment, or a pre-treatment outcome). It should return ≈0. If it finds an "effect,"
+        the method is hallucinating.</li>
+      <li><b>Robustness:</b> re-estimate on the overlap-only sample, swap learners, try alternate adjustment
+        sets. Big swings mean fragility.</li>
+    </ul>
+    <h3>Sensitivity — "how wrong could my untestable assumption be?"</h3>
+    <p>Exchangeability can't be tested, but you can ask <i>how strong</i> a hidden confounder would have to
+    be to overturn the result. The <b>E-value</b> answers exactly that: the minimum association (on a
+    risk-ratio scale) an unmeasured confounder would need with <i>both</i> treatment and outcome to explain
+    the estimate away. A large E-value means only an implausibly strong hidden cause could be the culprit; a
+    small one means the finding is fragile.</p>
+    <div class="callout key"><span class="lab">Calibrated language</span>
+    The conclusion's wording should track this evidence. Clean assumptions + clean diagnostics + clean
+    refutation → "<b>estimated causal effect</b>." A concern or two → "<b>consistent with a causal
+    effect</b>." Weak design or failed checks → "<b>an association, not robust to…</b>." Never write
+    "X causes Y" when the assumptions are merely hopeful.</div>
+  </section>
+
+  <!-- ================= PART II ================= -->
+  <div class="part-label">Part II — How this repo turns the concepts into a process</div>
+
+  <section id="repo">
+    <h2>What this repository enforces</h2>
+    <p>The repo is not a library; it's a <b>discipline</b>. It hard-codes the order of operations above so
+    the thinking happens before the coding, every time. Three pieces:</p>
+    <div class="grid3">
+      <div class="card"><h4>📋 configs/project.yaml</h4><p>The single source of truth: intervention, who was
+        treated, outcomes, covariates, data paths. Read first; never re-asked.</p></div>
+      <div class="card"><h4>📚 the causal-inference skill</h4><p>The 10-step methodology plus reference files
+        (design playbook, DAGs, diagnostics, refutation). When it conflicts with intuition, it wins.</p></div>
+      <div class="card"><h4>🤖 the agents</h4><p>Planner, Implementer, Reviewer, Orchestrator — each owns a
+        slice and hands off only when guardrails pass.</p></div>
+    </div>
+  </section>
+
+  <section id="tensteps">
+    <h2>The 10 steps map directly onto Part I</h2>
+    <p>Steps 1–5 are <span class="phase think">THINKING</span> (everything in the Concepts section);
+    steps 6–10 are <span class="phase code-ph">CODE</span> (the toolbox and the checks).</p>
+    <ol class="steps">
+      <li><b>Formulate</b> <span>— the causal question &amp; estimand (§The question, §Estimand).</span><span class="phase think">THINKING</span></li>
+      <li><b>Design</b> <span>— eligibility, timing, SUTVA; emulate a target trial.</span><span class="phase think">THINKING</span></li>
+      <li><b>DAG</b> <span>— draw the assumptions; find the backdoor set (§DAGs).</span><span class="phase think">THINKING</span></li>
+      <li><b>Identify</b> <span>— pick a strategy &amp; state the bought assumption (§Identification).</span><span class="phase think">THINKING</span></li>
+      <li><b>Choose estimator</b> <span>— match it to the design (§Toolbox).</span><span class="phase think">THINKING</span></li>
+      <li><b>Estimate</b> <span>— code; admissible covariates only.</span><span class="phase code-ph">CODE</span></li>
+      <li><b>Diagnose</b> <span>— overlap, balance (§Trust).</span><span class="phase code-ph">CODE</span></li>
+      <li><b>Refute</b> <span>— placebo / negative control.</span><span class="phase code-ph">CODE</span></li>
+      <li><b>Interpret</b> <span>— estimand, supported population, units.</span><span class="phase code-ph">CODE</span></li>
+      <li><b>Report</b> <span>— assumptions first, calibrated language.</span><span class="phase code-ph">CODE</span></li>
+    </ol>
+    <div class="callout warn"><b>Hard stops:</b> no DAG → no identification · status ≠ "identified" → no
+    estimation · positivity violated → no estimation · failed guardrail → no report. A failed check yields
+    <i>no</i> result artifact — there is no "ship it with a warning."</div>
+    <pre><span class="c"># the agent loop</span>
+project.yaml ─► Planner ─► [plan + design.yaml] ─► Implementer ─► [results + report]
+                  ▲                                      │
+                  └──────────  Reviewer  ◄───────────────┘   <span class="c"># routes design vs code findings</span></pre>
+  </section>
+
+  <!-- ================= PART III ================= -->
+  <div class="part-label">Part III — Seeing it all on one problem</div>
+
+  <section id="example">
+    <h2>The worked example: a voluntary leadership program</h2>
+    <p>L&amp;D ran a 3-month leadership program (Jan–Mar) to lift manager effectiveness and cut turnover.
+    Participation was <b>voluntary</b>, and some departments promoted it harder than others — a textbook
+    observational setup with selection baked in.</p>
+    <div class="grid3">
+      <div class="card tight"><h4>Treatment</h4><p>Entered the program. 570 of 9,000 (6.3%).</p></div>
+      <div class="card tight"><h4>Outcomes (June, 1–5)</h4><p>Manager Efficacy (primary), Stay Intention, Workload. Prior-year baselines available.</p></div>
+      <div class="card tight"><h4>The confounder</h4><p>Latent manager motivation drives both who enrolls and who scores well.</p></div>
+    </div>
+    <div class="callout key"><span class="lab">Why synthetic data with a known answer</span>
+    The dataset is generated with a <b>true effect baked in</b> — Efficacy <code>+0.30</code>, Stay
+    <code>+0.25</code>, Workload <code>+0.15</code>. Real studies never reveal the truth, so you can't tell
+    a good method from a lucky one. Here we can grade the workflow against the answer key.</div>
+  </section>
+
+  <section id="ex-design">
+    <h2>Design &amp; DAG — applying §DAGs and §Identification</h2>
+    <p><b>Estimand:</b> the <b>ATT</b> — voluntary uptake makes "did it help those who attend?" the honest
+    question. <b>Strategy:</b> backdoor adjustment, because the major drivers of enrollment (performance,
+    tenure, baseline scores, departmental push) are measured. The unmeasured piece — pure motivation — is
+    the named residual threat (the partly-unobserved <code>Q</code> below).</p>
+    <div class="dag">  Manager motivation (Q, partially UNOBSERVED)
+         │                 ╲
+         ▼                  ▼
+   performance,          Enrollment (T) ─────────► Efficacy_followup (Y)
+   baseline scores ◄──┐        ▲                          ▲
+         │            │        │                          │
+         └────────────┘   dept_promo_intensity            │
+                                                          │
+   baseline_efficacy ──────────────────(direct path)─────┘</div>
+    <p class="legend"><b>Adjust for</b> (block the backdoors): baseline indices, performance, tenure, team
+    size, span of control, demographics, org/region/job family, dept promotion. <b>Excluded</b> as
+    post-treatment (would act as mediators/colliders): all follow-up outcomes and retention flags.</p>
+    <pre>Identification strategy: backdoor adjustment (conditional exchangeability)
+Required assumptions:
+  1. Conditional exchangeability given the adjustment set   <span class="c">— IDENTIFYING, partly untestable</span>
+  2. Positivity for the treated                             <span class="c">— TESTABLE (diagnostics)</span>
+  3. Consistency · 4. SUTVA                                 <span class="c">— substantive</span>
+Identification status: identified  (conditional on assumption 1)</pre>
+    <p><b>Estimator:</b> AIPW (doubly robust) primary; ANCOVA and IPW as cross-checks; the naive difference
+    shown only to expose the bias.</p>
+  </section>
+
+  <section id="ex-results">
+    <h2>Results vs ground truth — watch the bias collapse</h2>
+    <p>ATT estimates with 95% bootstrap CIs. The bar is the point estimate; the white tick is the
+    <b>true</b> effect. The naive estimate sits far out; adjustment pulls it most of the way home.</p>
+
+    <h3>Manager Efficacy Index <span class="legend">— true ATT = +0.30</span></h3>
+    <table>
+      <tr><th>Estimator</th><th>ATT</th><th>95% CI</th><th style="width:28%">vs. truth (tick = +0.30)</th><th>biased when…</th></tr>
+      <tr><td>Naive</td><td class="num">+1.034</td><td class="num">[0.97,1.10]</td>
+        <td><div class="bar"><i style="width:94%;background:var(--bad)"></i><div class="truth-mark" style="left:27%"></div></div></td><td class="muted">always (no adjustment)</td></tr>
+      <tr><td>ANCOVA</td><td class="num">+0.427</td><td class="num">[0.38,0.48]</td>
+        <td><div class="bar"><i style="width:39%;background:var(--warn)"></i><div class="truth-mark" style="left:27%"></div></div></td><td class="muted">outcome model wrong</td></tr>
+      <tr><td>IPW</td><td class="num">+0.420</td><td class="num">[0.37,0.47]</td>
+        <td><div class="bar"><i style="width:38%;background:var(--warn)"></i><div class="truth-mark" style="left:27%"></div></div></td><td class="muted">propensity model wrong</td></tr>
+      <tr class="primary"><td><b>AIPW (primary)</b></td><td class="num"><b>+0.417</b></td><td class="num">[0.36,0.47]</td>
+        <td><div class="bar"><i style="width:38%;background:var(--accent)"></i><div class="truth-mark" style="left:27%"></div></div></td><td class="muted"><b>both</b> models wrong</td></tr>
+    </table>
+
+    <div class="grid2">
+      <table>
+        <tr><th>Stay Intention <span class="muted">(true +0.25)</span></th><th>ATT</th></tr>
+        <tr><td>Naive</td><td class="num">+0.767</td></tr>
+        <tr><td>ANCOVA / IPW</td><td class="num">+0.305 / +0.309</td></tr>
+        <tr class="primary"><td><b>AIPW</b></td><td class="num"><b>+0.303</b></td></tr>
+      </table>
+      <table>
+        <tr><th>Workload <span class="muted">(true +0.15)</span></th><th>ATT</th></tr>
+        <tr><td>Naive</td><td class="num" style="color:var(--bad)">−0.112</td></tr>
+        <tr><td>ANCOVA / IPW</td><td class="num">+0.072 / +0.055</td></tr>
+        <tr class="primary"><td><b>AIPW</b></td><td class="num"><b>+0.060</b></td></tr>
+      </table>
+    </div>
+
+    <h3>The bias decomposition — this is the lesson</h3>
+    <p>The efficacy estimate walks toward truth in two moves: one the data can make, one it can't.</p>
+    <div class="eq">naive <b>+1.03</b>  ──(adjust for measured confounders)──►  adjusted <b>+0.42</b>  ──(unmeasured Q)──►  truth <b>+0.30</b>
+      <span class="c">      └─── selection bias we CAN remove ≈ 0.61 ───┘          └ residual we CANNOT ≈ 0.12 ┘</span></div>
+    <div class="grid3" style="margin-top:14px">
+      <div class="card"><h4>Selection bias is huge</h4><p>Naive efficacy is 3× the truth — motivated managers opt in. Adjustment removes ~75% of the gap.</p></div>
+      <div class="card"><h4>Confounding flips signs</h4><p>Naive workload looks <i>negative</i>; adjusted, it's correctly positive. The raw number was backwards.</p></div>
+      <div class="card"><h4>Adjustment isn't magic</h4><p>The estimate still sits above truth — the residual is exactly the unmeasured confounder the DAG warned about.</p></div>
+    </div>
+  </section>
+
+  <section id="ex-diag">
+    <h2>Diagnostics &amp; refutation — applying §Trust</h2>
+    <div class="grid2">
+      <div class="panel">
+        <h3 style="margin-top:0">Diagnostics</h3>
+        <p><span class="pill good">PASS</span> <b>Balance:</b> max |SMD| after IPW = <code>0.023</code>
+        (&lt; 0.10). Performance rating went from SMD <code>1.10</code> → <code>0.005</code> — the confounder
+        is no longer lopsided.</p>
+        <p><span class="pill good">PASS</span> <b>ATT positivity:</b> only <code>0.35%</code> of treated lie
+        outside control support; <code>0%</code> have e(X) &gt; 0.98.</p>
+        <p class="legend">~41% of <i>controls</i> sit at e(X) &lt; 0.02 — expected for a rare program and
+        harmless for ATT (they carry ≈0 weight). The generic "&lt;5% extreme PS" rule is the wrong guardrail
+        here; the design uses the treated-support check instead — a concept-driven correction, not a
+        rule-of-thumb.</p>
+      </div>
+      <div class="panel">
+        <h3 style="margin-top:0">Refutation &amp; sensitivity</h3>
+        <p><span class="pill good">PASS</span> <b>Placebo</b> (shuffled treatment): ATT = <code>−0.028</code>
+        ≈ 0. The pipeline doesn't invent effects.</p>
+        <p><span class="pill good">STABLE</span> <b>Trim-to-overlap:</b> ATT = <code>0.416</code>, unchanged.</p>
+        <p><span class="pill warn">MODERATE</span> <b>E-value = 2.45</b> (CI bound 2.27): a hidden confounder
+        would need a ~2.4× association with both enrollment and efficacy to erase the estimate. Motivation is
+        plausible at moderate strength — consistent with the small residual bias above.</p>
+      </div>
+    </div>
+    <figure>
+      <img alt="Propensity score overlap by treatment group" src="data:image/png;base64,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AACANHNLQMqbN69iY2MlSTdu3NDatWvVpk0b2/L8+fPr/Pnz7tg1AAAAAKSZW+5BqlWrlmbOnKkWLVpo6dKlunjxojp27Ghbvn//fhUpUsQduwYAAACANHNLQHrllVfUpk0b1alTR8YYRUREqF69erblixYtUqNGjdyxawAAAABIM7cEpDp16mjXrl36+eefVaBAATVr1sy2LDY2VoMHD7ZrAwAAAICswG3fgxQcHKzOnTs7tBcoUEDDhw93124BAAAAIM3c+kWxFy9e1KFDh3Tu3DkZYxyWN23a1J27BwAAAIC74paAdObMGQ0dOlRfffWVEhISHJYbY2SxWJwuAwAAAIDM4paA1L9/fy1btkzDhg1TkyZNVLBgQXfsBgAAAABcyi0BadWqVRo5cqTeeOMNd2weAAAAANzCLV8U6+/vr1KlSrlj0wAAAADgNm4JSL169dKiRYvcsWkAAAAAcBu3XGIXERGhdevWqW3bthowYIDCwsLk6enp0K9WrVru2D0AAAAApIlbAlLjxo1t/7969WqH5cxiBwAAACArcktAmjVrljs2CwAAAABu5ZaAFBkZ6Y7NAgAAAIBbuWWShlsdO3ZMW7du1eXLl929KwAAAABIF7cFpCVLlqhixYq65557VKtWLW3cuFGSdPr0adWsWZNZ7gAAAABkOW4JSMuWLdPDDz+swoULKyoqSsYY27LChQurePHimj17tjt2DQAAAABp5paANGHCBDVt2lTr16/XkCFDHJY3aNBAW7ZscceuAQAAACDN3BKQtm/frkceeSTZ5UWKFNHJkyfdsWsAAAAASDO3BCR/f/8UJ2U4cOCAChUq5I5dAwAAAECauSUgtWjRQnPmzNGNGzcclh0/flwzZ87UAw884I5dAwAAAECauSUgvfLKK/r7779Vt25dffjhh7JYLFq5cqVefPFFVatWTcYYRUVFuWPXAAAAAJBmbglIFSpU0Pr161WoUCH9+9//ljFGkydP1quvvqpq1arpxx9/VKlSpdyxawAAAABIMy93bbhKlSpas2aNzp07p3379ikxMVFlypRRcHCwu3YJAAAAAOni8oAUHx+vefPmadWqVdq/f78uXryo/PnzKzw8XG3bttW//vUv+fj4uHq3AAAAAJBuLg1I27ZtU+fOnXXo0CEZYxQYGKh8+fLp5MmT+v3337VgwQK98sorWrp0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AJBxCFgAAKRejgxICxculKenpwYMGGBr8/PzU79+/TR27FgdOXJEYWFhmVghAGQfmX2JIQENcAHOhgGpliMD0pYtW1S+fHkFBATYtderV0+S9McffxCQACCbyOyAlp0RLpHj5KSgl5OOJYddLpgjA9KxY8dUtGhRh/aktn/++SfZdU+ePKlTp07Zte3YsUOStG/fPhdWmTbHY2IkSQeOnc7cQgAAWd6Bo7n734oa9xRI87p//B2bafvOCvsH7krIX5ldge1zenx8fLq3lSMDUlxcnHx9fR3a/fz8bMuTM336dI0fP97psi5durikPgAAACDneCezC7A5cuSIatWqla5t5MiAlCdPHqfp8erVq7blyRk8eLC6detm13bhwgXt2bNH1apVcxq8Msq+ffvUpUsXLV68WOHh4ZlWB5xjfLI+xihrY3yyNsYna2N8sj7GyL3i4+N15MgRNWvWLN3bypEBqWjRojp69KhD+7FjxyRJxYoVS3bdkJAQhYSEOLQ3aNDAdQWmU3h4uKpUqZLZZSAZjE/WxxhlbYxP1sb4ZG2MT9bHGLlPes8cJfFwyVaymBo1amjPnj26cOGCXfvGjRttywEAAADgdjkyIEVERCghIUEzZsywtcXHx2vWrFmqX78+M9gBAAAAcCpHXmJXv359devWTWPGjNHJkycVHh6uOXPmKCYmRh9//HFmlwcAAAAgi8qRAUmSPvnkE/373//W3Llzde7cOVWvXl3ffPONmjZtmtmlpVlwcLCioqIUHByc2aXACcYn62OMsjbGJ2tjfLI2xifrY4yyD4sxxmR2EQAAAACQFeTIe5AAAAAAIC0ISAAAAABgRUACAAAAACsCEgAAAABYEZAAAAAAwIqAlAXEx8fr+eefV7FixZQnTx7Vr19fq1evTtW6R48e1SOPPKICBQooICBAnTt31oEDB9xcce6S1vHZvXu3Ro4cqYYNG8rPz08Wi0UxMTHuLzgXSusYff311+revbvKlCkjf39/VahQQaNGjVJsbKz7i85F0jo+ixYtUps2bVSsWDH5+vrqnnvuUUREhLZv354BVece6fk36FatW7eWxWLR0KFD3VBl7pXW8Rk3bpwsFovDj5+fXwZUnbuk9zX0xRdfqEGDBsqbN68KFCighg0b6vvvv3djxbgTAlIW0KdPH02ZMkWPPvqo3nnnHXl6eqpdu3Zav359iutdunRJLVq00Lp16zR27FiNHz9eW7ZsUbNmzXTmzJkMqj7nS+v4bNiwQe+++64uXryoSpUqZVC1uVNax2jAgAHauXOnevXqpXfffVdt27bVtGnT1KBBA8XFxWVQ9TlfWsdn27ZtKliwoIYPH67p06dr0KBB2rJli+rVq6etW7dmUPU5X1rH51Zff/21NmzY4MYqc6/0js/777+vuXPn2n5mzZrl5opzn/SM0bhx49SzZ0+FhYVpypQpmjhxoqpXr66jR49mQOVIlkGm2rhxo5FkJk+ebGuLi4szZcuWNQ0aNEhx3UmTJhlJ5tdff7W17dy503h6epoxY8a4rebcJD3jc+bMGXPhwgVjjDGTJ082kszBgwfdWW6ulJ4xio6OdmibM2eOkWRmzpzp6lJzpfSMjzPHjx83Xl5eZuDAga4sM9dyxfjExcWZUqVKmQkTJhhJZsiQIe4qN9dJz/hERUUZSebUqVPuLjNXS88YbdiwwVgsFjNlyhR3l4m7xBmkTLZw4UJ5enpqwIABtjY/Pz/169dPGzZs0JEjR1Jct27duqpbt66trWLFirr//vv15ZdfurXu3CI94xMUFKT8+fNnRJm5WnrGqHnz5g5tDz30kCRp586dLq81N0rP+DgTEhIif39/LoN0EVeMzxtvvKHExEQ988wz7iw1V3LF+BhjdOHCBRlj3FlqrpWeMXr77bcVGhqq4cOHyxijS5cuZUTJSAUCUibbsmWLypcvr4CAALv2evXqSZL++OMPp+slJibqzz//VJ06dRyW1atXT/v379fFixddXm9uk9bxQcZx9RgdP35cklS4cGGX1JfbuWJ8YmNjderUKW3btk1PPPGELly4oPvvv98d5eY66R2fw4cP6/XXX9ekSZOUJ08ed5WZa7ni9VOmTBkFBgYqf/786tWrl06cOOGOUnOt9IzRd999p7p16+rdd99VcHCw8ufPr6JFi2ratGnuLBmp4JXZBeR2x44dU9GiRR3ak9r++ecfp+udPXtW8fHxd1y3QoUKLqw290nr+CDjuHqMJk2aJE9PT0VERLikvtzOFeNz3333affu3ZKkfPny6cUXX1S/fv1cW2guld7xGTVqlGrWrKkePXq4pb7cLj3jU7BgQQ0dOlQNGjSQr6+vfvzxR7333nv69ddftXnzZocP9EibtI7RuXPndPr0af3000/6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bJcgrl27VpGRkSpcuLCuX7/uUPcDDzygChUqpPjYpqYWSZo3b57q1asnf39/FSxYUE2bNtWqVavs+kyfPl1VqlSRr6+vihUrpiFDhig2NtauT/PmzVW1alX99ttvatq0qfz9/TV27FhJUnx8vKKiohQeHi5fX1+FhYXpueeeU3x8fIrHAAC5DWeQACCX279/vySpUKFCtrYbN26oTZs2aty4sd588035+/vLGKNOnTopOjpa/fr1U40aNbRy5Uo9++yzOnr0qKZOnWq33XXr1umLL77QsGHD5Ovrq+nTp6tt27b69ddfVbVqVUnSiRMndN9999kCVXBwsP73v/+pX79+unDhgkaMGGG3zddff10eHh565plndP78eb3xxht69NFHtXHjRknStWvX1KZNG8XHx+upp55SaGiojh49qm+++UaxsbEKDAx0OP6mTZtq2LBhevfddzV27FhVqlRJklSpUiU99thj+uSTT7Ry5Up16NDBts7x48f1/fffKyoqKtnHNbW1jB8/XuPGjVPDhg01YcIE+fj4aOPGjfr+++/1wAMPSJLGjRun8ePHq1WrVho0aJB2796t999/X5s2bdJPP/0kb29v237PnDmjBx98UD169FCvXr1UpEgRJSYmqlOnTlq/fr0GDBigSpUqadu2bZo6dar27NmjxYsXp/gcAYBcxQAAcoVZs2YZSWbNmjXm1KlT5siRI+bzzz83hQoVMnny5DF///23McaYyMhII8mMHj3abv3FixcbSWbixIl27REREcZisZh9+/bZ2iQZSWbz5s22tkOHDhk/Pz/z0EMP2dr69etnihYtak6fPm23zR49epjAwEBz5coVY4wx0dHRRpKpVKmSiY+Pt/V75513jCSzbds2Y4wxW7ZsMZLMggULUnwsSpYsaSIjI22/L1iwwEgy0dHRdv0SEhLMPffcY7p3727XPmXKFGOxWMyBAweS3Udqatm7d6/x8PAwDz30kElISLBblpiYaIwx5uTJk8bHx8c88MADdn2mTZtmJJn//ve/trZmzZoZSeaDDz6w29bcuXONh4eH+fHHH+3aP/jgAyPJ/PTTT8nWCAC5DZfYAUAu06pVKwUHByssLEw9evRQvnz5tGjRIhUvXtyu36BBg+x+X7FihTw9PTVs2DC79lGjRskYo//973927Q0aNFDt2rVtv5coUUKdO3fWypUrlZCQIGOMvvrqK3Xs2FHGGJ0+fdr206ZNG50/f16///673Tb79u0rHx8f2+9NmjSRJB04cECSbGdlVq5cqStXrqTl4bHj4eGhRx99VEuXLtXFixdt7Z9++qkaNmyo0qVLJ7tuampZvHixEhMT9dJLL9lNGiHdvExRktasWaNr165pxIgRdn369++vgIAALV++3G49X19f9e3b165twYIFqlSpkipWrGj3OCddXhkdHX2nhwIAcg0CEgDkMu+9955Wr16t6Oho7dixQwcOHFCbNm3s+nh5eemee+6xazt06JCKFSum/Pnz27UnXZJ26NAhu/Zy5co57Lt8+fK6cuWKTp06pVOnTik2NlYzZsxQcHCw3U/SB/yTJ0/arV+iRAm73wsWLChJOnfunCSpdOnSevrpp/XRRx+pcOHCatOmjd577z2He37uRu/evRUXF6dFixZJujkD3m+//abHHnssxfVSU8v+/fvl4eGhypUrJ7udpMf19vudfHx8VKZMGYfHvXjx4nYhUrp5L9Rff/3l8DiXL19ekuPjDAC5GfcgAUAuU69ePdssdsnx9fV1OKPhaomJiZKkXr16KTIy0mmf6tWr2/3u6enptJ+5ZZKIt956S3369NGSJUu0atUqDRs2TK+99pp++eUXh9CXGpUrV1bt2rU1b9489e7dW/PmzZOPj48eeeSRO67r6lpSI0+ePA5tiYmJqlatmqZMmeJ0nbCwMLfUAgDZEQEJAJAqJUuW1Jo1a3Tx4kW7s0i7du2yLb/V3r17HbaxZ88e+fv7Kzg4WJKUP39+JSQkqFWrVi6ttVq1aqpWrZpefPFF/fzzz2rUqJE++OADTZw40Wn/pMvZktO7d289/fTTOnbsmObPn6/27dvbzl6lp5ayZcsqMTFRO3bsUI0aNZyun/S47t69W2XKlLG1X7t2TQcPHkzVY1e2bFlt3bpV999//x2PFQByOy6xAwCkSrt27ZSQkKBp06bZtU+dOlUWi0UPPvigXfuGDRvs7iE6cuSIlixZogceeECenp7y9PRU165d9dVXX2n79u0O+zt16tRd13jhwgXduHHDrq1atWry8PBIcTrrpO94un3a7CQ9e/aUxWLR8OHDdeDAAfXq1csltXTp0kUeHh6aMGGC7YxakqSzYq1atZKPj4/effdduzNlH3/8sc6fP6/27dvfsZZHHnlER48e1cyZMx2WxcXF6fLly3fcBgDkFpxBAgCkSseOHdWiRQu98MILiomJ0b333qtVq1ZpyZIlGjFihMqWLWvXv2rVqmrTpo3dNN/SzWmtk7z++uuKjo5W/fr11b9/f1WuXFlnz57V77//rjVr1ujs2bN3VeP333+voUOHqlu3bipfvrxu3LihuXPn2sJYcmrUqCFPT09NmjRJ58+fl6+vr1q2bKmQkBBJUnBwsNq2basFCxaoQIECqQolqaklPDxcL7zwgl5++WU1adJEDz/8sHx9fbVp0yYVK1ZMr732moKDgzVmzBiNHz9ebdu2VadOnbR7925Nnz5ddevWTVVYe+yxx/Tll1/qySefVHR0tBo1aqSEhATt2rVLX375pVauXHnHyy4BINfIzCn0AAAZJ2ma702bNqXYLzIy0uTNm9fpsosXL5qRI0eaYsWKGW9vb1OuXDkzefJk25TUSSSZIUOGmHnz5ply5coZX19fU7NmTYdptI0x5sSJE2bIkCEmLCzMeHt7m9DQUHP//febGTNm2PokTfN9+5TZBw8eNJLMrFmzjDHGHDhwwDz++OOmbNmyxs/PzwQFBZkWLVqYNWvW2K13+zTfxhgzc+ZMU6ZMGePp6el0yu8vv/zSSDIDBgxI4dH7f6mtxRhj/vvf/5qaNWsaX19fU7BgQdOsWTOzevVquz7Tpk0zFStWNN7e3qZIkSJm0KBB5ty5c3Z9mjVrZqpUqeK0nmvXrplJkyaZKlWq2PZTu3ZtM378eHP+/PlUHRMA5AYWY277+nMAANLJYrFoyJAhDpfjZWdLlixRly5d9MMPP9imFwcA5DzcgwQAQCrMnDlTZcqUUePGjTO7FACAG3EPEgAAKfj888/1559/avny5XrnnXeYBQ4AcjgCEgAAKejZs6fy5cunfv36afDgwZldDgDAzbgHCQAAAACsuAcJAAAAAKwISAAAAABgRUACAAAAACsCEgAAAABYEZAAAAAAwIqABAAAAABWBCQAAAAAsCIgAQAAAIAVAQkAAAAArAhIAAAAAGBFQAIAAAAAKwISAAAAAFgRkAAAAADAioAEAAAAAFYEJAAAAACw+j+nVV+w8MS9vAAAAABJRU5ErkJggg==">
+      <figcaption>Overlap check (§Trust, diagnostics). Controls (blue) pile near zero because the program is
+      rare; treated (orange) spread out — but every region of treated propensity has control mass beneath it.
+      That is the positivity condition the ATT needs, made visual.</figcaption>
+    </figure>
+  </section>
+
+  <section id="ex-interpret">
+    <h2>Interpretation — calibrated to the evidence</h2>
+    <div class="callout key"><span class="lab">The honest sentence</span>
+    The results are <b>consistent with a positive causal effect</b> of the program on participating managers:
+    roughly <b>+0.3 to +0.4</b> points on Manager Efficacy and <b>~+0.3</b> on Stay Intention (1–5 scale),
+    for the kind of manager who chooses to attend (the ATT).</div>
+    <p>Why "consistent with" and not "the program caused"? Diagnostics and refutation are clean, but the
+    no-unmeasured-confounding assumption can't be verified and the E-value rates robustness as moderate — so
+    we land on the middle tier of the calibration ladder from §Trust. <b>Decision:</b> the evidence supports
+    continuing the program; before scaling, corroborate with behavioral retention and add randomized
+    <i>encouragement</i> so the next study can lean on an instrument instead of exchangeability.</p>
+  </section>
+
+  <section id="run">
+    <h2>Run it yourself</h2>
+    <pre>pip install -e . matplotlib
+
+python scripts/00_generate_dummy_data.py   <span class="c"># synthetic data with the true effect baked in</span>
+python scripts/01_prepare_data.py          <span class="c"># propensity score e(X) + common-support flag</span>
+python scripts/02_estimate.py              <span class="c"># 4 estimators, diagnostics, refutation, report</span>
+pytest tests/ -q                           <span class="c"># guards: ATT weights, SMD, AIPW recovers a known effect</span></pre>
+    <p>Plan: <code>docs/plans/manager-leadership.md</code> · report:
+    <code>reports/manager-leadership-report.md</code> · machine-readable results:
+    <code>results/summary.json</code>. To use it on your own project, replace
+    <code>configs/project.yaml</code>, drop immutable data in <code>data/raw/</code>, and ask the Planner to
+    begin — the same ten steps follow.</p>
+  </section>
+
+  </main>
+</div>
+<footer>A concepts-first guide · manager-leadership v1.0 · synthetic data with a known ground-truth effect.</footer>
+<script>
+(function(){
+  "use strict";
+  var sigmoid = function(z){ return 1/(1+Math.exp(-z)); };
+
+  // Deterministic PRNG + cached standard-normal / uniform draws, so widgets are
+  // smooth and reproducible as parameters change.
+  function makeRNG(seed){ var s=seed>>>0; return function(){ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }; }
+  function gaussArr(n, rng){ var a=[],i,u,v; for(i=0;i<n;i++){ u=0;v=0; while(u===0)u=rng(); while(v===0)v=rng(); a.push(Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)); } return a; }
+  function uniArr(n, rng){ var a=[],i; for(i=0;i<n;i++) a.push(rng()); return a; }
+
+  /* ============ Widget 1 — selection-bias simulator ============ */
+  (function(){
+    var N=2000, tau=0.30, rng=makeRNG(12345);
+    var Q=gaussArr(N,rng), UT=uniArr(N,rng), eps=gaussArr(N,rng);
+    var sl=document.getElementById('sel-g');
+    if(!sl) return;
+    var SCALE=3.0; // x-axis max for the bars
+    function pct(v){ return Math.max(0, Math.min(100, (v/SCALE)*100)); }
+    function partialSlope(arr){ // residualize Y,T on Q via simple OLS, FWL slope
+      var mq=0,ma=0,i; for(i=0;i<N;i++){mq+=Q[i];ma+=arr[i];} mq/=N;ma/=N;
+      var sxy=0,sxx=0; for(i=0;i<N;i++){sxy+=(Q[i]-mq)*(arr[i]-ma);sxx+=(Q[i]-mq)*(Q[i]-mq);}
+      var b=sxy/sxx, r=[]; for(i=0;i<N;i++) r.push(arr[i]-(ma+b*(Q[i]-mq))); return r;
+    }
+    function recompute(g){
+      var T=[],Y=[],i,p;
+      for(i=0;i<N;i++){ p=sigmoid(-0.4+g*Q[i]); T.push(UT[i]<p?1:0); Y.push(3+g*Q[i]+tau*T[i]+0.5*eps[i]); }
+      var st=0,ct=0,sc=0,cc=0; for(i=0;i<N;i++){ if(T[i]){st+=Y[i];ct++;} else {sc+=Y[i];cc++;} }
+      var naive=st/ct-sc/cc;
+      var rY=partialSlope(Y), rT=partialSlope(T), num=0,den=0;
+      for(i=0;i<N;i++){ num+=rT[i]*rY[i]; den+=rT[i]*rT[i]; }
+      var adj=num/den;
+      return {naive:naive, adj:adj};
+    }
+    function fmt(v){ return (v>=0?'+':'')+v.toFixed(2); }
+    var tickL = pct(0.30)+'%';
+    ['sel-tick1','sel-tick2','sel-tick3'].forEach(function(id){ document.getElementById(id).style.left=tickL; });
+    function render(){
+      var g=parseFloat(sl.value);
+      document.getElementById('sel-gv').textContent=g.toFixed(2);
+      var r=recompute(g);
+      document.getElementById('sel-naive-bar').style.width=pct(r.naive)+'%';
+      document.getElementById('sel-adj-bar').style.width=pct(r.adj)+'%';
+      document.getElementById('sel-naive').textContent=fmt(r.naive);
+      document.getElementById('sel-adj').textContent=fmt(r.adj);
+      var bias=r.naive-tau, note;
+      if(g<0.05) note='With no confounding (γ=0), even the naive comparison is unbiased — the groups are already comparable. This is the randomized-experiment case.';
+      else note='The naive estimate is now <b>'+fmt(r.naive)+'</b> — overstating the truth by <b>'+fmt(bias)+'</b> of pure selection bias. The adjusted estimate stays near <b>+0.30</b> because it compares like with like. <i>Same data, two very different answers.</i>';
+      document.getElementById('sel-note').innerHTML=note;
+    }
+    sl.addEventListener('input',render); render();
+  })();
+
+  /* ============ Widget 2 — DAG adjustment-set explorer ============ */
+  (function(){
+    var X=document.getElementById('adjX'); if(!X) return;
+    var M=document.getElementById('adjM'), C=document.getElementById('adjC');
+    var GREY='#7b8497', RED='#f87171', TEAL='#5eead4', DIM='#3a4252';
+    function set(id,color,dash){ var e=document.getElementById(id); e.setAttribute('stroke',color); e.setAttribute('stroke-dasharray', dash?'6 4':'0'); }
+    function ring(id,on){ document.getElementById(id).classList.toggle('on',on); }
+    function render(){
+      var aX=X.checked, aM=M.checked, aC=C.checked;
+      ring('ringX',aX); ring('ringM',aM); ring('ringC',aC);
+      // confounding backdoor T<-X->Y : red if X not adjusted, dim if blocked
+      set('eXT', aX?DIM:RED, aX); set('eXY', aX?DIM:RED, aX);
+      // causal path T->M->Y : teal normally, red+dashed (blocked) if M adjusted
+      set('eTM', aM?RED:TEAL, aM); set('eMY', aM?RED:TEAL, aM);
+      // collider T->C<-Y : grey normally, red if C adjusted (path opened)
+      set('eTC', aC?RED:GREY, false); set('eYC', aC?RED:GREY, false);
+
+      var rows=[];
+      if(!aX) rows.push(['bad','✗','<b>Backdoor path open.</b> T ← X → Y is unblocked, so confounding leaks in. Your estimate mixes the real effect with X’s influence — <b>biased</b>.']);
+      else    rows.push(['ok','✓','<b>Backdoor blocked.</b> Conditioning on the confounder X closes T ← X → Y. Good.']);
+      if(aM)  rows.push(['bad','✗','<b>Mediator controlled.</b> You’ve conditioned on M, which sits <i>on</i> the causal path T → M → Y. That removes the very effect you’re trying to measure — the estimate collapses toward <b>zero</b>.']);
+      if(aC)  rows.push(['bad','✗','<b>Collider opened.</b> C is a common <i>effect</i> of T and Y. Conditioning on it creates a spurious T–Y association out of nothing — <b>collider bias</b>.']);
+      var ok = aX && !aM && !aC;
+      if(ok)  rows.unshift(['ok','★','<b>Identified.</b> Adjustment set = {X}. Every backdoor is blocked, and you’ve touched no mediator or collider. This recovers the total causal effect of T on Y.']);
+      else    rows.unshift(['warn','!','<b>Not the clean estimate.</b> The correct set here is <b>{X} only</b> — adjust the confounder, leave the mediator and collider alone.']);
+      document.getElementById('dag-verdict').innerHTML = rows.map(function(r){
+        return '<div class="vrow '+r[0]+'"><span class="ic">'+r[1]+'</span><span>'+r[2]+'</span></div>';
+      }).join('');
+    }
+    [X,M,C].forEach(function(c){ c.addEventListener('change',render); }); render();
+  })();
+
+  /* ============ Widget 3 — IPW reweighting / balance ============ */
+  (function(){
+    var cv=document.getElementById('ipw-canvas'); if(!cv) return;
+    var N=3000, rng=makeRNG(999), Xn=gaussArr(N,rng), Ut=uniArr(N,rng);
+    var X=[],T=[],i,p; for(i=0;i<N;i++){ X.push(Xn[i]); p=sigmoid(-1.0+1.1*Xn[i]); T.push(Ut[i]<p?1:0); }
+    var tr=[],co=[]; for(i=0;i<N;i++)(T[i]?tr:co).push(i);
+    function wmeanvar(idx,w){ var sw=0,sx=0; idx.forEach(function(i){sw+=w[i];sx+=w[i]*X[i];}); var m=sx/sw,sv=0;
+      idx.forEach(function(i){sv+=w[i]*(X[i]-m)*(X[i]-m);}); return [m,sv/sw]; }
+    var ones={}; tr.concat(co).forEach(function(i){ones[i]=1;});
+    var wAtt={}; tr.forEach(function(i){wAtt[i]=1;}); co.forEach(function(i){var e=sigmoid(-1.0+1.1*X[i]); wAtt[i]=e/(1-e);});
+    function smd(w){ var a=wmeanvar(tr,w), b=wmeanvar(co,w); return (a[0]-b[0])/Math.sqrt((a[1]+b[1])/2); }
+    // histogram bins
+    var LO=-4, HI=4, B=32, bw=(HI-LO)/B;
+    function hist(idx,w){ var h=new Array(B).fill(0),tot=0; idx.forEach(function(i){ var k=Math.floor((X[i]-LO)/bw); if(k>=0&&k<B){h[k]+=w[i];tot+=w[i];} }); for(var k=0;k<B;k++)h[k]/=(tot*bw); return h; }
+    var W=cv.width, H=cv.height, padB=34, padT=14;
+    function draw(controlW, frac){
+      var ctx=cv.getContext('2d'); ctx.clearRect(0,0,W,H);
+      var hT=hist(tr,ones), hC0=hist(co,ones), hC1=hist(co,wAtt), k;
+      var maxv=0; [hT,hC0,hC1].forEach(function(h){h.forEach(function(v){if(v>maxv)maxv=v;});});
+      function bar(h,color,alpha){ ctx.globalAlpha=alpha; ctx.fillStyle=color;
+        for(k=0;k<B;k++){ var x=(k/B)*W, y=padT+(H-padB-padT)*(1-h[k]/maxv), bh=(H-padB-padT)*(h[k]/maxv);
+          ctx.fillRect(x+1, y, W/B-2, bh); } ctx.globalAlpha=1; }
+      // interpolate control hist from unweighted -> weighted
+      var hC=[]; for(k=0;k<B;k++) hC.push(hC0[k]*(1-frac)+hC1[k]*frac);
+      bar(hC, '#6ea8fe', 0.55);
+      bar(hT, '#fbbf24', 0.55);
+      // axis
+      ctx.strokeStyle='#2a2f3a'; ctx.beginPath(); ctx.moveTo(0,H-padB); ctx.lineTo(W,H-padB); ctx.stroke();
+      ctx.fillStyle='#9aa3b2'; ctx.font='12px monospace'; ctx.textAlign='center';
+      [-3,-2,-1,0,1,2,3].forEach(function(t){ var x=((t-LO)/(HI-LO))*W; ctx.fillText(t.toFixed(0), x, H-14); });
+      ctx.fillText('confounder X  →', W/2, H-2);
+    }
+    var btn=document.getElementById('ipw-btn'), smdEl=document.getElementById('ipw-smd'),
+        note=document.getElementById('ipw-note'), applied=false, anim=null;
+    function setSMD(v){ smdEl.textContent=(v>=0?'+':'')+v.toFixed(3); smdEl.style.color = Math.abs(v)<0.1 ? '#4ade80' : '#f87171'; }
+    draw(ones,0); setSMD(smd(ones));
+    function animate(to){
+      var from = applied?1:0, start=null, dur=650;
+      cancelAnimationFrame(anim);
+      function step(ts){ if(!start)start=ts; var t=Math.min(1,(ts-start)/dur), f=from+(to-from)*(t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2);
+        draw(null,f); setSMD(smd(ones)*(1-f)+smd(wAtt)*f); if(t<1) anim=requestAnimationFrame(step); }
+      anim=requestAnimationFrame(step);
+    }
+    btn.addEventListener('click',function(){
+      applied=!applied; animate(applied?1:0);
+      btn.classList.toggle('on',applied);
+      btn.textContent = applied ? 'Remove weights ◀' : 'Apply IPW weights ▶';
+      note.innerHTML = applied
+        ? 'After weighting, the control distribution lines up with the treated and the SMD drops below the 0.1 threshold. The reweighted controls now stand in as a fair counterfactual — <i>this</i> is what "adjusting" actually does.'
+        : 'Before weighting, the control group is the wrong comparison — its X distribution barely overlaps the treated. That gap <i>is</i> the confounding.';
+    });
+  })();
+
+  /* ============ Widget 4 — estimand explorer (ATE vs ATT) ============ */
+  (function(){
+    var cv=document.getElementById('est-canvas'); if(!cv) return;
+    var N=150, COLS=30, ROWS=5, rng=makeRNG(4242);
+    var EFF=[0.50,0.30,0.10], COL=['#f87171','#fbbf24','#6ea8fe'];
+    // assign each manager a type (balanced thirds) and a fixed uniform draw
+    var grp=[],U=[],i; for(i=0;i<N;i++){ grp.push(i%3); U.push(rng()); }
+    var meanEff=EFF.reduce(function(a,b){return a+b;})/3; // 0.30 = ATE (balanced)
+    var SCALE=0.6, sl=document.getElementById('est-s');
+    function pct(v){ return Math.max(0,Math.min(100,(v/SCALE)*100)); }
+    document.getElementById('est-tickA').style.left=pct(0.30)+'%';
+    document.getElementById('est-tickB').style.left=pct(0.30)+'%';
+    function treatedSet(s){
+      // p of enrolling rises with one's own gain when s>0; intercept keeps ~45% enrolled
+      var T=[]; for(i=0;i<N;i++){ var z=(EFF[grp[i]]-meanEff)/0.16; var p=sigmoid(-0.2+s*z); T.push(U[i]<p?1:0); } return T;
+    }
+    function drawDots(T){
+      var ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
+      ctx.clearRect(0,0,W,H);
+      var padX=24, padY=20, gw=(W-2*padX)/COLS, gh=(H-2*padY)/ROWS, r=Math.min(gw,gh)*0.32;
+      for(i=0;i<N;i++){ var c=i%COLS, rw=Math.floor(i/COLS);
+        var x=padX+gw*(c+0.5), y=padY+gh*(rw+0.5);
+        ctx.beginPath(); ctx.arc(x,y,r,0,2*Math.PI);
+        if(T[i]){ ctx.fillStyle=COL[grp[i]]; ctx.globalAlpha=1; ctx.fill(); }
+        else { ctx.globalAlpha=0.22; ctx.fillStyle=COL[grp[i]]; ctx.fill(); ctx.globalAlpha=1;
+               ctx.lineWidth=1; ctx.strokeStyle=COL[grp[i]]; ctx.stroke(); }
+      }
+      ctx.globalAlpha=1;
+    }
+    function render(){
+      var s=parseFloat(sl.value); document.getElementById('est-sv').textContent=s.toFixed(2);
+      var T=treatedSet(s), sum=0,n=0;
+      for(i=0;i<N;i++){ if(T[i]){ sum+=EFF[grp[i]]; n++; } }
+      var att=n?sum/n:0;
+      drawDots(T);
+      document.getElementById('est-att-bar').style.width=pct(att)+'%';
+      document.getElementById('est-att').textContent='+'+att.toFixed(2);
+      var note;
+      if(s<0.05) note='Uptake is unrelated to who benefits, so the treated look like everyone else: <b>ATT ≈ ATE ≈ +0.30</b>. This is what randomisation buys you — the estimand question barely matters.';
+      else note='Now the high-responders are over-represented among the treated, so <b>ATT = +'+att.toFixed(2)+'</b> — well above the <b>+0.30</b> ATE. The program looks great <i>for those who take it</i>, but a mandatory roll-out (the ATE) would do less. Reporting ATT as if it were ATE would oversell it to the reluctant majority. The per-type effects (CATE: +0.50 / +0.30 / +0.10) never change — only <i>who is in the average</i> does.';
+      document.getElementById('est-note').innerHTML=note;
+    }
+    sl.addEventListener('input',render); render();
+  })();
+})();
+</script>
+</body>
+</html>
