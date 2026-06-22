@@ -23,9 +23,9 @@ are satisfied or plausible (see diagnostics).
 
 | Outcome | Naive | ANCOVA | IPW | **AIPW (primary)** | True |
 |---|---|---|---|---|---|
-| Manager Efficacy Index | +1.034 | +0.427 | +0.420 | **+0.417 [0.364, 0.465]** | +0.30 |
-| Stay Intention Index | +0.767 | +0.305 | +0.309 | **+0.303 [0.250, 0.346]** | +0.25 |
-| Workload Index | −0.112 | +0.072 | +0.055 | **+0.060 [0.019, 0.104]** | +0.15 |
+| Manager Efficacy Index | +1.034 | +0.426 | +0.420 | **+0.417 [0.366, 0.467]** | +0.30 |
+| Stay Intention Index | +0.767 | +0.305 | +0.309 | **+0.303 [0.252, 0.347]** | +0.25 |
+| Workload Index | −0.112 | +0.072 | +0.055 | **+0.060 [0.018, 0.105]** | +0.15 |
 
 **What the adjustment did.** The naive comparison massively overstates the
 effect (+1.03 on efficacy) because better, more motivated managers

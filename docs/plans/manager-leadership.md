@@ -104,7 +104,10 @@ outcomes measured the following June. No staggered timing — single cohort.
 ## 13. Inference strategy
 Nonparametric bootstrap (500 resamples) for SEs and percentile 95% CIs.
 Treatment is assigned at the individual level, so individual-level resampling is
-appropriate.
+appropriate. The propensity model is **refit within each bootstrap resample** so
+that first-stage estimation error is propagated into the IPW/AIPW intervals
+(treating the estimated propensity as fixed would not reflect the estimator's
+true sampling distribution).
 
 ## 14. Files to inspect/change
 `scripts/00_generate_dummy_data.py`, `scripts/01_prepare_data.py`,

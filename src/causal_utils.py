@@ -131,17 +131,35 @@ def estimate_all(
     n_boot: int = 500,
     seed: int = 7,
 ) -> list[Estimate]:
-    """Run naive, ANCOVA, IPW, and AIPW ATT estimators with bootstrap CIs."""
+    """Run naive, ANCOVA, IPW, and AIPW ATT estimators with bootstrap CIs.
+
+    For the propensity-based estimators (IPW, AIPW) the propensity model is
+    **refit inside every bootstrap resample** rather than reusing the supplied
+    ``ps``. Treating the estimated propensity as if it were known understates
+    uncertainty; refitting propagates the first-stage estimation error into the
+    confidence intervals. ``ps`` is still used only for the headline point
+    estimate (it is the model fit on the full sample in the prep step).
+    """
     y = df[outcome].values
     t = df[treatment].values
     X = design_matrix(df, covariates)
     n = len(df)
 
+    def ipw(idx):
+        ps_b = ps[idx] if len(idx) == n and np.array_equal(idx, np.arange(n)) \
+            else fit_propensity(X[idx], t[idx])
+        return _att_ipw_point(y[idx], t[idx], ps_b)
+
+    def aipw(idx):
+        ps_b = ps[idx] if len(idx) == n and np.array_equal(idx, np.arange(n)) \
+            else fit_propensity(X[idx], t[idx])
+        return _att_aipw_point(y[idx], t[idx], X[idx], ps_b)
+
     specs = {
         "Naive (unadjusted)": lambda idx: _naive_point(y[idx], t[idx]),
         "ANCOVA (OLS)": lambda idx: _att_ancova_point(y[idx], t[idx], X[idx]),
-        "IPW (ATT)": lambda idx: _att_ipw_point(y[idx], t[idx], ps[idx]),
-        "AIPW (doubly robust)": lambda idx: _att_aipw_point(y[idx], t[idx], X[idx], ps[idx]),
+        "IPW (ATT)": ipw,
+        "AIPW (doubly robust)": aipw,
     }
     results = []
     for name, fn in specs.items():

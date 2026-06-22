@@ -17,7 +17,7 @@
     "trim_to_overlap_att": 0.4161,
     "trim_stable_vs_primary": true,
     "e_value_point": 2.445,
-    "e_value_ci_bound": 2.27
+    "e_value_ci_bound": 2.278
   },
   "estimates": {
     "Manager Efficacy Index": [
@@ -43,18 +43,18 @@
         "estimator": "IPW (ATT)",
         "estimand": "ATT",
         "point": 0.4198,
-        "se": 0.0374,
-        "ci_low": 0.3422,
-        "ci_high": 0.4918,
+        "se": 0.0265,
+        "ci_low": 0.3687,
+        "ci_high": 0.4716,
         "n": 9000
       },
       {
         "estimator": "AIPW (doubly robust)",
         "estimand": "ATT",
         "point": 0.4166,
-        "se": 0.0255,
-        "ci_low": 0.364,
-        "ci_high": 0.4653,
+        "se": 0.0256,
+        "ci_low": 0.3663,
+        "ci_high": 0.4669,
         "n": 9000
       }
     ],
@@ -81,18 +81,18 @@
         "estimator": "IPW (ATT)",
         "estimand": "ATT",
         "point": 0.309,
-        "se": 0.0339,
-        "ci_low": 0.2367,
-        "ci_high": 0.3749,
+        "se": 0.0249,
+        "ci_low": 0.2564,
+        "ci_high": 0.3547,
         "n": 9000
       },
       {
         "estimator": "AIPW (doubly robust)",
         "estimand": "ATT",
         "point": 0.3027,
-        "se": 0.0242,
-        "ci_low": 0.2499,
-        "ci_high": 0.3462,
+        "se": 0.0244,
+        "ci_low": 0.252,
+        "ci_high": 0.3467,
         "n": 9000
       }
     ],
@@ -119,18 +119,18 @@
         "estimator": "IPW (ATT)",
         "estimand": "ATT",
         "point": 0.0545,
-        "se": 0.0286,
-        "ci_low": 0.0015,
-        "ci_high": 0.1134,
+        "se": 0.0231,
+        "ci_low": 0.0109,
+        "ci_high": 0.1006,
         "n": 9000
       },
       {
         "estimator": "AIPW (doubly robust)",
         "estimand": "ATT",
         "point": 0.0602,
-        "se": 0.0228,
-        "ci_low": 0.0186,
-        "ci_high": 0.1045,
+        "se": 0.0229,
+        "ci_low": 0.018,
+        "ci_high": 0.1053,
         "n": 9000
       }
     ]

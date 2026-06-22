@@ -17,7 +17,37 @@ This template is intentionally opinionated. It assumes:
 
 ## How to use this repo
 
-**Try it first with the included example.** This repo ships with a populated `configs/project.yaml` and a dummy dataset (`data/raw/manager_data.csv`) for a manager leadership development program evaluation — a realistic observational setup with voluntary participation and uneven program uptake across departments. If you just want to see the workflow run end-to-end, skip to Step 3. To use it on your own project, replace `project.yaml` and the contents of `data/raw/` as described below.
+**Try it first with the included example.** This repo ships with a populated `configs/project.yaml` for a manager leadership development program evaluation — a realistic observational setup with voluntary participation and uneven program uptake across departments. The raw data is **not** committed (everything under `data/` is git-ignored, by design — raw data stays out of version control), so generate the matching dummy dataset with one command:
+
+```bash
+pip install -e .                          # install dependencies
+python scripts/00_generate_dummy_data.py  # writes data/raw/manager_data.csv
+```
+
+A complete, already-run worked example of the full workflow on this data lives in `scripts/`, `docs/plans/`, and `reports/` — see [`docs/walkthrough.html`](docs/walkthrough.html) for an interactive end-to-end explainer. To run the pipeline yourself end to end, see [Running the worked example](#running-the-worked-example). To use the repo on your own project, replace `project.yaml` and the contents of `data/raw/` as described below.
+
+## Running the worked example
+
+The repo includes a fully worked run of the canonical workflow on the
+manager-leadership dataset, so you can see real outputs before pointing it at
+your own data. From the repo root:
+
+```bash
+pip install -e .                            # numpy, pandas, scikit-learn, matplotlib, ...
+python scripts/00_generate_dummy_data.py    # data/raw/manager_data.csv (synthetic, known true effect)
+python scripts/01_prepare_data.py           # propensity score + common-support flag -> data/processed/
+python scripts/02_estimate.py               # estimators, diagnostics, refutation -> results/ + reports/
+pytest                                       # identification-critical guard tests
+```
+
+Outputs: machine-readable results in `results/summary.json`, tables/figures in
+`reports/`, the approved plan in `docs/plans/manager-leadership.md`, and a
+narrative report in `reports/manager-leadership-report.md`. Because the dummy
+data is generated with a **known true effect**, you can check the estimates
+against ground truth. For a guided, interactive explanation of every step and
+the underlying concepts, open [`docs/walkthrough.html`](docs/walkthrough.html).
+
+---
 
 ### 1. Fill in configs/project.yaml
 
